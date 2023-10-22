@@ -1,8 +1,8 @@
-this is some amount of plaintext that will be read from fcrypt.py
+In the world of bits and bytes, 
+Where secrets hide from prying sights, 
+Encryption reigns supreme, A shield against the hacker's dream.
 
-this data here (the actual text itself) should be encrypted using AES,
-whereas the key will be encrypted with RSA.
-
-blahblahblahblahblahblahblahblahblahblahblahblah
-blahblahblahblahblahblahblahblahblahblahblahblah
-some important text
+With AES and RSA, 
+We lock our data safe away, 
+Symmetric and asymmetric keys, 
+Protecting our privacy with ease.
