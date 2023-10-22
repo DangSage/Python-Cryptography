@@ -1,0 +1,8 @@
+this is some amount of plaintext that will be read from fcrypt.py
+
+this data here (the actual text itself) should be encrypted using AES,
+whereas the key will be encrypted with RSA.
+
+blahblahblahblahblahblahblahblahblahblahblahblah
+blahblahblahblahblahblahblahblahblahblahblahblah
+some important text
