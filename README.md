@@ -1,16 +1,13 @@
 # Secure Airdrop with Cryptography
-
 This project aims to create a secure cryptographic version of an airdrop mechanism using Python. We will employ both symmetric and asymmetric cryptography, specifically RSA and AES, to achieve our goal.
 
 ## Symmetric Cryptography (AES):
-  
   AES (Advanced Encryption Standard) is a symmetric encryption algorithm used for data confidentiality.
   It uses a single secret key for both encryption and decryption.
   In our project, we'll use the PyCryptodome library to implement AES encryption and decryption.
   Knowledge of AES is crucial for understanding how data is secured during transfer.
 
 ## Asymmetric Cryptography (RSA):
-
   RSA is an asymmetric encryption algorithm that involves a pair of public and private keys.
   The public key is used for encryption, while the private key is used for decryption.
   We'll use RSA to securely exchange AES keys between users.
