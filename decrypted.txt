@@ -1,0 +1,8 @@
+In the world of bits and bytes, 
+Where secrets hide from prying sights, 
+Encryption reigns supreme, A shield against the hacker's dream.
+
+With AES and RSA, 
+We lock our data safe away, 
+Symmetric and asymmetric keys, 
+Protecting our privacy with ease.
