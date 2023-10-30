@@ -7,8 +7,9 @@ from Crypto.Cipher import PKCS1_OAEP, AES
 
 # this program uses PGP encryption to encrypt and decrypt files using a public key and private key
 
-# To run this program, use the following command:
-# python fcrypt.py --encrypt <input file> <output file>
+# To run this program, use the following commands:
+# python fcrypt.py --encrypt <key> <input file> <output file>
+# python fcrypt.py --decrypt <key> <input file> <output file>
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='Encrypt or decrypt files using PGP scheme')
