@@ -14,16 +14,14 @@ args = parser.parse_args()
 
 # Generate a unique key pair and store it in the directory defined as an argument
 def generate_key_pair(directory, keyname, keysize):
-    prefix = keyname+'_' if keyname else ""
+    prefix = f"{keyname}_" if keyname else ""
     private_key = RSA.generate(keysize)
     public_key = private_key.publickey()
-    private_key_file = open(os.path.join(directory, prefix+"private.pem"), "wb")
-    private_key_file.write(private_key.exportKey('PEM'))
-    private_key_file.close()
-    public_key_file = open(os.path.join(directory, prefix+"public.pem"), "wb")
-    public_key_file.write(public_key.exportKey('PEM'))
-    public_key_file.close()
-    print("Key pair generated and stored in: " + directory)
+    with open(os.path.join(directory, f"{prefix}private.pem"), "wb") as private_key_file:
+        private_key_file.write(private_key.exportKey('PEM'))
+    with open(os.path.join(directory, f"{prefix}public.pem"), "wb") as public_key_file:
+        public_key_file.write(public_key.exportKey('PEM'))
+    print(f"Key pair generated and stored in: {directory}")
 
 # Confirm that the user wants to generate the key pair
 confirmation = input("Are you sure you want to generate a new RSA key pair? (y/n): ")
