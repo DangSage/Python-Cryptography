@@ -131,7 +131,7 @@ def save_user_data(user_data):
         user_data[email]['password'] = base64.b64encode(user_data[email]['password']).decode()
 
     with open('users.json', 'w') as file:
-        json.dump(user_data, file)
+        json.dump(user_data, file, indent=4)
 
 
 def load_user_data():
@@ -156,6 +156,16 @@ def verify_user(email, password):
 
 if __name__ == "__main__":
     while True:
+        # Check if users.json exists in the current directory
+        if not os.path.exists('users.json'):
+            print("No users are registered with this client.")
+            choice = input("Would you like to register a new user? (y/n): ")
+            if choice.lower() == 'y':
+                print()
+                register_user()
+            else:
+                break
+        print("Welcome to the secure messaging client!\n")
         print("1. Register")
         print("2. Login")
         print("3. Quit\n")
