@@ -1,3 +1,7 @@
+"""Module that contains functions for encrypting and decrypting passwords using RSA encryption. 
+    It also contains a function for generating RSA key pairs.
+    
+    This is the only module that needs to be imported in order to use the encryption functions within the SecureDrop package."""
 
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP

@@ -1,3 +1,5 @@
+"""Module used for reading and writing data to users.json and other user-related functions"""
+
 import json
 import os
 import base64

@@ -1,3 +1,6 @@
+"""Module that contains functions that handle user actions such as registration, login, sending and accepting friend requests.
+   It also contains functions for verifying users and getting user input."""
+
 import getpass
 from .cryptfuncs import generate_key_pair, encrypt_password, decrypt_password
 from .user_data import load_user_data, save_user_data

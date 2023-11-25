@@ -1,6 +1,9 @@
 # Authors: Ethan, Matt, Spencer
-# This entire file is just used to import all of the functions from the other files in the package.
+# Init file for the sd_package "SecureDrop" package.
+#
+# Importing the functions from the other files in the package within this folder.
 # This allows us to use the functions in the other files without having to import each one individually.
+# Pylance won't recognize these files as being used, but this is just a precompiled package, so it doesn't matter.
 
 # Importing functions from encryption.py
 # These functions are used for generating key pairs and encrypting and decrypting passwords
