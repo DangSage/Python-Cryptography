@@ -1,7 +1,7 @@
 from utility import (
     load_user_data, 
     decrypt_password, 
-    MAX_PASS_ENTRY, 
+    MAX_ENTRY_ATTEMPTS, 
     USER_EMAIL,
     get_email, 
     get_password
@@ -16,7 +16,7 @@ def login_loop():
     utility.USER_EMAIL = email
 
     if email in user_data:
-        while attempts < MAX_PASS_ENTRY:
+        while attempts < MAX_ENTRY_ATTEMPTS:
             password = get_password()
             private_key = user_data[email]['private_key'].encode()
             stored_password = user_data[email]['password']
@@ -30,7 +30,7 @@ def login_loop():
     else:
         print("User with that email not registered!")
     
-    if(attempts == MAX_PASS_ENTRY):
+    if(attempts == MAX_ENTRY_ATTEMPTS):
         print("\nMax password attempts reached!")
     print("\nExiting...")
     return False

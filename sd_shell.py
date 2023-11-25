@@ -6,9 +6,6 @@ from cmd import Cmd
 RED = "\033[31m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
-BLUE = "\033[34m"
-MAGENTA = "\033[35m"
-CYAN = "\033[36m"
 RESET = "\033[0m"
 
 def request_contact(sender_email, receiver_email):
@@ -24,6 +21,7 @@ def request_contact(sender_email, receiver_email):
 
 def accept_contact(email, sender_email):
     user_data = load_user_data()
+
     if email in user_data and sender_email in user_data:
         if sender_email in user_data[email]['contact_requests']:
             user_data[email]['contacts'].append(sender_email)
@@ -31,44 +29,55 @@ def accept_contact(email, sender_email):
             user_data[email]['contact_requests'].remove(sender_email)
             save_user_data(user_data)
             print("Contact request accepted!\n")
+            return True
         else:
             print("No contact request from this user.\n")
+            return False
     else:
         print("Invalid email.\n")
+        return False
+
 
 def list_contacts():
-    # list all online contacts in top down list format
+    '''list all online contacts in top down list format'''
     print(GREEN + "Online Contacts:" + RESET)
-    for contact in ONLINE_CONTACTS:
-        print("  [{} ({})]".format(contact[0], (YELLOW + contact[1] + RESET)))
+    if len(ONLINE_CONTACTS) == 0:
+        print("  No contacts online.")
+    else:
+        for contact in ONLINE_CONTACTS:
+            print("  [{} ({})]".format(contact[0], (YELLOW + contact[1] + RESET)))
+
     print("\033[0m")
 
 
 def handle_contact():
-    # show how many contact requests are pending, then give option to send or accept contact request
     user_data = load_user_data()
     email = utility.USER_EMAIL
-    if email in user_data:
-        if len(user_data[email]['contact_requests']) > 0:
-            print("You have {} pending contact requests.".format(len(user_data[email]['contact_requests'])))
-            print("Do you want to accept them (y/n)?")
-            inp = ""
-            while inp != "y" and inp != "n":
-                inp = input()
-            if inp == "y":
-                for sender_email in user_data[email]['contact_requests']:
-                    accept_contact(email, sender_email)
-        else:
-            print("You have no pending contact requests.")
-            print("Do you want to send a contact request (y/n)?")
-            inp = ""
-            while inp != "y" and inp != "n":
-                inp = input()
-            if inp == "y":
-                receiver_email = input("Enter receiver email: ")
-                request_contact(email, receiver_email)
+
+    if len(user_data) == 1:
+        print("No other users to contact.")
+        return
+
+    if len(user_data[email]['contact_requests']) > 0:
+        print("You have {} pending contact requests.".format(len(user_data[email]['contact_requests'])))
+        inp = ""
+        while True:
+            inp = input("Do you want to accept a contact request (y/n)? ")
+            if inp == "y" or inp == "yes":
+                print("Pending contact requests:")
+                for i, contact in enumerate(user_data[email]['contact_requests']):
+                    name = user_data[contact]['full name']
+                    print("  {}) '{}' -> {}".format(i+1, name, contact))
+                sender_email = input("\nEnter sender email: ")
+                if accept_contact(email, sender_email):
+                    break
+            elif inp == "n" or inp == "no":
+                break
+
     else:
-        print("Invalid email.\n")
+        print("You have no pending contact requests.")
+        yes_no_prompt("Do you want to send a contact request (y/n)? ", 
+                      lambda: request_contact(email, input("Enter receiver email: ")))
 
 
 class SecureDrop(Cmd):

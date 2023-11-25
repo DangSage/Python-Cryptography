@@ -4,21 +4,45 @@ from utility import (
     generate_key_pair,
     encrypt_password,
     get_email,
-    get_password
+    get_password,
+    MIN_PASS_LENGTH,
+    MAX_ENTRY_ATTEMPTS
 )
 from getpass import getpass
 
+def valid_pass(password, confirm_password):
+    '''return bool if password is valid, shouldn't be called outside of register_user()'''
+    if password != confirm_password:
+        print("Passwords don't match.")
+        return False
+    elif len(password) < MIN_PASS_LENGTH:
+        print("Password must be at least 8 characters long.")
+        return False
+    
+    print("Password is valid! Registering User...")
+    return True
+
+
 def register_user():
+    '''register user and save to user_data.json'''
+
+    attempts = 0
     name = input("Enter Full Name: ")
     email = get_email()
-    password = get_password()
+    if email in load_user_data():
+        print("\nUser with that email already registered!")
+        exit()
 
-    confirm_password = getpass("Re-enter Password: ")
-    
-    while password != confirm_password:
-        print("Passwords don't match.")
+    password = ""
+    while True:
         password = get_password()
         confirm_password = getpass("Re-enter Password: ")
+        if valid_pass(password, confirm_password):
+            break
+        attempts += 1
+        if attempts >= MAX_ENTRY_ATTEMPTS:
+            print("Maximum password attempts reached.")
+            return
 
     private_key, public_key = generate_key_pair()
     encrypted_password = encrypt_password(public_key, password)
