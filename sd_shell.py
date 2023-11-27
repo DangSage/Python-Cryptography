@@ -88,14 +88,14 @@ class SecureDrop(Cmd):
         handle_contact()
 
     def help_add(self):
-        print("  'add' -> Handle contact requests.")
+        print("  'add'  -> Handle contact requests.")
 
 
     def do_list(self, inp):
         list_contacts()
 
     def help_list(self):
-        print("  'list' -> List all online contacts.")
+        print("  'list' -> List all online contacts for current user.")
 
 
     def do_exit(self, inp):
@@ -105,10 +105,19 @@ class SecureDrop(Cmd):
         print("  'exit' -> Exit SecureDrop. Shorthand: x q Ctrl-d")
 
 
+    def do_me(self, inp):
+        print("   Email: "+utility.USER_EMAIL)
+        print("   Alias: "+utility.USER_NAME+"\n")
+    
+    def help_me(self):
+        print("  'me'   -> Display current user info.")
+
+
     def do_help(self, inp):
         SecureDrop.help_add(self)
         SecureDrop.help_list(self)
         SecureDrop.help_exit(self)
+        SecureDrop.help_me(self)
         SecureDrop.help_help(self)
 
     def help_help(self):

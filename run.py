@@ -12,7 +12,7 @@ def start():
             print("(1) -> Login\n"
                   "(2) -> Register\n"
                   "(q) -> Quit\n")
-            inp = input("Pick an option >")
+            inp = input("Pick an option > ")
         inp = inp.lower()
         if inp == "1":
             login_user()
