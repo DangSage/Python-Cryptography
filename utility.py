@@ -8,8 +8,8 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 from Cryptodome.Hash import SHA256
 
-PASSWORD_LENGTH = 8
-MAX_PASS_ENTRY = 3
+MIN_PASS_LENGTH = 8
+MAX_ENTRY_ATTEMPTS = 3
 USER_LIST = "users.json"
 USER_EMAIL = ""
 USER_NAME = ""
@@ -37,14 +37,14 @@ def check_email():
 
     email_attempts = 0
 
-    while email_enter_attempts < MAX_PASS_ENTRY:
+    while email_enter_attempts < MAX_ENTRY_ATTEMPTS:
         email = input("Enter email: ")
         if re.search(regex, email):
             print("Valid Email")
-            email_enter_attempts = MAX_PASS_ENTRY
+            email_enter_attempts = MAX_ENTRY_ATTEMPTS
             return email
         else:
-            print("Invalid Email")
+            print("Invalid Email. Please try again.")
             email_attempts += 1
 
 
@@ -58,14 +58,15 @@ def save_user_data(user_data):
 
 def load_user_data():
     if os.path.exists(USER_LIST):
+        email = None
         with open(USER_LIST, 'r') as file:
             user_data = json.load(file)
             for email in user_data:
                 user_data[email]['password'] = base64.b64decode(user_data[email]['password'])
-                # put all contacts online paired with their email in top down list format
-                ONLINE_CONTACTS.append((user_data[email]['full name'], email))
-                ONLINE_CONTACTS.sort()
-            return user_data
+            if email == None:
+                return {}
+            else:
+                return user_data
     return {}
 
 
@@ -93,5 +94,20 @@ def decrypt_password(private_key, encrypted_password):
     decrypted_password = cipher.decrypt(encrypted_password)
 
     return decrypted_password.decode()
+
+
+def yes_no_prompt(prompt, yes_func, no_func=None):
+    inp = ""
+    while inp != "y" and inp != "n":
+        inp = input(prompt)
+        inp = inp.lower()
+    if inp == "y":
+        yes_func()
+    elif inp == "n":
+        if no_func is not None:
+            no_func()
+
+        
+    
 
 
