@@ -2,10 +2,10 @@
 import json
 import re
 import os
-import base64
+import binascii
 from getpass import getpass
 from Cryptodome.PublicKey import RSA
-from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.Protocol.KDF import PBKDF2
 from Cryptodome.Hash import SHA256
 
 MIN_PASS_LENGTH = 8
@@ -49,25 +49,29 @@ def check_email():
 
 
 def save_user_data(user_data):
-    for email in user_data:
-        user_data[email]['password'] = base64.b64encode(user_data[email]['password']).decode()
-
     with open(USER_LIST, 'w') as file:
         json.dump(user_data, file, indent=4)
 
 
 def load_user_data():
     if os.path.exists(USER_LIST):
-        email = None
         with open(USER_LIST, 'r') as file:
             user_data = json.load(file)
-            for email in user_data:
-                user_data[email]['password'] = base64.b64decode(user_data[email]['password'])
-            if email == None:
-                return {}
-            else:
-                return user_data
+            return user_data
     return {}
+
+
+def hash_password(password):
+    salt = os.urandom(16)
+    password_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
+    return salt, password_hash
+
+
+def check_password(salt, password_hash, password):
+    # Hash the entered password in the same way as the stored password
+    new_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
+    # Compare the new hash with the stored hash
+    return new_hash == password_hash
 
 
 def generate_key_pair():
@@ -78,22 +82,6 @@ def generate_key_pair():
     public_pem = public_key.exportKey()
 
     return private_pem, public_pem
-
-
-def encrypt_password(public_key, password):
-    public_key = RSA.importKey(public_key)
-    cipher = PKCS1_OAEP.new(public_key, hashAlgo=SHA256)
-    encrypted_password = cipher.encrypt(password.encode())
-
-    return encrypted_password
-
-
-def decrypt_password(private_key, encrypted_password):
-    private_key = RSA.importKey(private_key)
-    cipher = PKCS1_OAEP.new(private_key, hashAlgo=SHA256)
-    decrypted_password = cipher.decrypt(encrypted_password)
-
-    return decrypted_password.decode()
 
 
 def yes_no_prompt(prompt, yes_func, no_func=None):

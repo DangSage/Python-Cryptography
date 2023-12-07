@@ -1,12 +1,12 @@
 from utility import (
     load_user_data,
     save_user_data,
-    generate_key_pair,
-    encrypt_password,
     get_email,
     get_password,
+    hash_password,
     MIN_PASS_LENGTH,
-    MAX_ENTRY_ATTEMPTS
+    MAX_ENTRY_ATTEMPTS,
+    binascii
 )
 from getpass import getpass
 
@@ -44,17 +44,15 @@ def register_user():
             print("Maximum password attempts reached.")
             return
 
-    private_key, public_key = generate_key_pair()
-    encrypted_password = encrypt_password(public_key, password)
-
+    salt, hashed_password = hash_password(password)
     user_data = load_user_data()
     user_data[email] = {
-        'private_key': private_key.decode(),
         'full name': name,
-        'password': encrypted_password,
+        'password': binascii.hexlify(salt).decode() + ":" + binascii.hexlify(hashed_password).decode(),
         'contacts': [],
         'contact_requests': []  
     }
+
 
     save_user_data(user_data)
     print("\nRegistration successful! Re-login...")

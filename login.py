@@ -1,11 +1,13 @@
 from utility import (
-    load_user_data, 
-    decrypt_password, 
+    load_user_data,
     MAX_ENTRY_ATTEMPTS,
     USER_NAME,
     USER_EMAIL,
     get_email, 
-    get_password
+    get_password,
+    check_password,
+    PBKDF2,
+    SHA256
 )
 import utility
 
@@ -21,10 +23,10 @@ def login_loop():
         utility.USER_NAME = user_data[email]['full name']
         while attempts < MAX_ENTRY_ATTEMPTS:
             password = get_password()
-            private_key = user_data[email]['private_key'].encode()
-            stored_password = user_data[email]['password']
-            decrypted_password = decrypt_password(private_key, stored_password)
-            if decrypted_password == password:
+            # get salt and stored password hash from user_data
+            salt = bytes.fromhex(user_data[email]['password'].split(':')[0])
+            stored_password_hash = bytes.fromhex(user_data[email]['password'].split(':')[1])
+            if (check_password(salt, stored_password_hash, password)):
                 print("Login successful!")
                 return True
             else:
