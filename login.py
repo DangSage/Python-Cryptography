@@ -5,9 +5,7 @@ from utility import (
     USER_EMAIL,
     get_email, 
     get_password,
-    check_password,
-    PBKDF2,
-    SHA256
+    check_password
 )
 import utility
 

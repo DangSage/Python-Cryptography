@@ -2,7 +2,6 @@
 import json
 import re
 import os
-import binascii
 from getpass import getpass
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Protocol.KDF import PBKDF2

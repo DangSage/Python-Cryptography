@@ -134,4 +134,8 @@ class SecureDrop(Cmd):
 
 
 def start_cmd():
-    SecureDrop().cmdloop()
+    try:
+        SecureDrop().cmdloop()
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        exit()

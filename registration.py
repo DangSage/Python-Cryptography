@@ -5,9 +5,9 @@ from utility import (
     get_password,
     hash_password,
     MIN_PASS_LENGTH,
-    MAX_ENTRY_ATTEMPTS,
-    binascii
+    MAX_ENTRY_ATTEMPTS
 )
+import binascii
 from getpass import getpass
 
 def valid_pass(password, confirm_password):
