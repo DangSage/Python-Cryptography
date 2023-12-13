@@ -6,8 +6,6 @@ from utility import check_contacts
 import globals as gl
 import nglobals as ng
 
-CERT = ng.CERT
-KEY = ng.KEY
 potential_contact = ng.potential_contact
 ignore_bcast_port = ng.ignore_bcast_port
 
@@ -64,7 +62,7 @@ def tcp_listener(port):
     global server
     host = ""
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    cntx.load_cert_chain(CERT, KEY)
+    cntx.load_cert_chain(ng.CERT, ng.KEY)
 
     server = TCPServer((host, port), tcp_handler)
     server.socket = cntx.wrap_socket(server.socket, server_side=True)
@@ -83,8 +81,8 @@ def tcp_client(port, data, is_file=False):
     # Initialize a TCP client socket using SOCK_STREAM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    cntx.load_verify_locations(CERT)
-    cntx.load_cert_chain(CERT, KEY)
+    cntx.load_verify_locations(ng.CERT)
+    cntx.load_cert_chain(ng.CERT, ng.KEY)
 
     s = cntx.wrap_socket(s, server_hostname="test.server")
 

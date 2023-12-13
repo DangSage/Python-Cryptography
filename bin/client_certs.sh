@@ -1,5 +1,5 @@
 # Create the client cert directory in the current directory
-mkdir -p ./bin/certs/client
+mkdir -p ./bin/certs/client_$1
 
 # Generate a new private key
 openssl genpkey -algorithm RSA -out key.pem
@@ -16,6 +16,6 @@ chmod 400 key.pem
 rm request.csr
 
 # Move the files to the correct location
-mv key.pem ./bin/certs/client/key.pem
-mv cert.crt ./bin/certs/client/cert.crt
+mv key.pem ./bin/certs/client_$1/$1key.pem
+mv cert.crt ./bin/certs/client_$1/$1cert.crt
 

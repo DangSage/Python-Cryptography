@@ -5,7 +5,9 @@ from secure_shell import (
     register_user,
     start_cmd
 )
-import network as ng
+import nglobals as ng
+import globals as gl
+from network import network_manager
 from threading import Thread
 
 def start():
@@ -34,13 +36,13 @@ def start():
 def cleanup():
     os.remove(ng.KEY)
     os.remove(ng.CERT)
-    os.rmdir("bin/certs/client")
+    os.rmdir("bin/certs/client_"+gl.USER_EMAIL)
 
 def run():
     start()
     cmd = Thread(target=start_cmd)
     cmd.start()
-    ng.network_manager()
+    network_manager()
     cmd.join()
     print("Closing SecureDrop...")
     cleanup()
