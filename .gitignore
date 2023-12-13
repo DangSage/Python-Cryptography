@@ -2,4 +2,4 @@
 __pycache__/
 ~*.py
 __*/
-client/
+client_*/
