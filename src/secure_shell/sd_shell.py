@@ -7,14 +7,17 @@ from utility import (
 import globals as gl
 from cmd import Cmd
 import network as net
+import time
 
 def request_contact(sender_email, receiver_email):
     user_data = load_user_data()
-    if sender_email in gl.ONLINE_CONTACTS and receiver_email in user_data:
+    if receiver_email in gl.ONLINE_CONTACTS:
         if receiver_email not in user_data[sender_email]['contact_requests']:
             user_data[receiver_email]['contact_requests'].append(sender_email)
             save_user_data(user_data)
             print("Friend request sent!\n")
+        elif receiver_email in user_data[sender_email]['contact_requests']:
+            print("Contact request already sent.\n")
     else:
         print("Invalid sender or receiver email.\n")
 
@@ -46,7 +49,6 @@ def list_contacts():
     else:
         for contact in gl.ONLINE_CONTACTS:
             print("  [{} ({})]".format(contact[0], (contact[1])))
-
     print("\033[0m")
 
 
@@ -54,7 +56,7 @@ def handle_contact():
     user_data = load_user_data()
     email = gl.USER_EMAIL
 
-    if len(user_data) == 1:
+    if len(gl.ONLINE_CONTACTS) == 0:
         print("No other users to contact.")
         return
 
@@ -135,10 +137,12 @@ class SecureDrop(Cmd):
 
 
 def start_cmd():
+    # wait a bit for network to start
+    time.sleep(0.5)
     try:
         SecureDrop().cmdloop()
     except KeyboardInterrupt:
         print("\nExiting...")
         net.shutdown_event.set()
-        net.stop_tcp_listener()
+        net.stop_tcp_listen()
         exit()
