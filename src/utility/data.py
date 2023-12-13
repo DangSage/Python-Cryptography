@@ -62,37 +62,38 @@ def generate_key_pair():
 
 def get_user_name_from_list():
     user_data = load_user_data()
-
-    username = user_data.get("full name")
-    print(username)
-    return username
+    
+    for user_email, user_info in user_data.items():
+        if user_email == gl.USER_EMAIL:
+            return user_info["username"]
 
 
 def user_exists(user_dictionary, email):
-    if user_dictionary[0].get("email") == email:
-        return True
+    for user_email, user_info in user_dictionary:
+        if user_email == email:
+            return True
     return False
 
 
 def check_contacts(data):
     user_data = load_user_data()
 
-    user_email = list(user_data[0].keys())[0]
-    email_exists = user_exists(user_data[0][user_email]["contacts"], data[1])
-    return email_exists
+    for user_email, user_info in user_data.items():
+        if user_email == gl.USER_EMAIL:
+            return user_exists(user_info["contacts"], data[1])  # check if the email exists in the user's contacts
+
+    return False
 
         
 def contacts_dict_exist():
-    '''check if contacts dictionary exists in user_data.json'''
+    '''check if contacts dictionary exists in user_data.json for all users'''
     with open(gl.USER_LIST, 'r') as file:
         data = json.load(file)
 
-        user_email = list(data[0].keys())[0]
-
-        u_dictionary = data[0][user_email]
-        if "contacts" in u_dictionary:
-            return True
-    return False
+        for user_email, user_info in data.items():
+            if "contacts" not in user_info:
+                return False
+    return True
 
     
 
