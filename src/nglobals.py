@@ -9,26 +9,8 @@ ignore_bcast_port = []
 CERT = ""
 KEY = ""
 
-def port_manager(bport, lport, max_attempts=1000):
-    test_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    attempts = 0
-    while attempts < max_attempts:
-        try:
-            test_socket.bind(("", bport))
-            if bport >= 2000:
-                bport = 1337
-            test_socket.close()
-            print(f"Broadcast port: {bport}\nTCP port: {lport}")
-            return bport, lport
-        except OSError:
-            print(f"Port {lport} is already in use.")
-            bport += 1
-            lport += 1
-            attempts += 1
-    print("Could not find an open port.")
-    return None, None
-
-bcast_port, tcp_listen = port_manager(1377, 9900)
+bcast_port = 1337   # temp port_manager(1377, 9900)
+tcp_listen = 9900   # temp port_manager(1377, 9900)
 tcp_port = 9900
 
 

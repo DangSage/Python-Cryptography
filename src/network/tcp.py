@@ -52,13 +52,13 @@ class tcp_handler(BaseRequestHandler):
         # self.request.sendall("AWK from server".encode())
 
 
-def stop_tcp_listener():
+def stop_tcp_listen():
     global server
     server.shutdown()
     server.server_close()
 
 
-def tcp_listener(port):
+def tcp_listen(port):
     global server
     host = ""
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -120,6 +120,7 @@ def tcp_client(port, data, is_file=False):
     if recieved.decode() == "Yes":
         if potential_contact not in gl.ONLINE_CONTACTS:
             gl.ONLINE_CONTACTS.append(potential_contact)
+            print("Potential contact " + potential_contact[0] + " added to online contacts")
             ignore_bcast_port.append(potential_contact[3])
     elif recieved.decode() == "No":
         pass

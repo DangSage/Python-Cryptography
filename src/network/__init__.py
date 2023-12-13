@@ -8,36 +8,56 @@ from .tcp import *
 
 shutdown_event = Event()
 
+def port_manager(bport, lport, max_attempts=1000):
+    test_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    attempts = 0
+    while attempts < max_attempts:
+        try:
+            test_socket.bind(("", bport))
+            if bport >= 2000:
+                bport = 1337
+            test_socket.close()
+            print(f"Broadcast port: {bport}\nTCP port: {lport}")
+            return bport, lport
+        except OSError:
+            print(f"Port {lport} is already in use.")
+            bport += 1
+            lport += 1
+            attempts += 1
+    print("Could not find an open port.")
+    return None, None
+
 def network_manager():
     ng.gen_certificate(gl.USER_EMAIL)
+    ng.bcast_port, ng.tcp_listen = port_manager(ng.bcast_port, ng.tcp_listen)
 
     # broadcast to other users that you exist
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.bind(("", ng.bcast_port))
     
 
-    _broadcast_listener = Thread(
-        target=broadcast_listener,
+    udp_listener = Thread(
+        target=broadcast_listen,
         name="broadcast_listener",
         args=(broadcast_socket, shutdown_event,)
     )
 
-    _broadcast_sender = Thread(
-        target=broadcast_sender,
+    udp_sender = Thread(
+        target=broadcast_send,
         name="broadcast_sender",
         args=(ng.bcast_port, shutdown_event,)
     )
 
-    _tcp_listener = Thread(
-        target=tcp_listener,
+    tcp_listener = Thread(
+        target=tcp_listen,
         name="tcp_listener",
         args=(ng.tcp_listen,)
     )
 
     procs = [
-        _broadcast_listener,
-        _broadcast_sender,
-        _tcp_listener
+        udp_listener,
+        udp_sender,
+        tcp_listener
     ]
 
     try:
@@ -47,7 +67,7 @@ def network_manager():
             sleep(0.1)  # Check every 100 ms
     except:
         shutdown_event.set()
-        if(_tcp_listener.is_alive()):
-            stop_tcp_listener()
+        if(tcp_listener.is_alive()):
+            stop_tcp_listen()
     for p in procs:
         p.join()
