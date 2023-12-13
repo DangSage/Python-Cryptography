@@ -1,16 +1,16 @@
 
-from utility import *
-import utility
+from utility import (
+    load_user_data,
+    save_user_data,
+    yes_no_prompt
+)
+import globals as gl
 from cmd import Cmd
-
-RED = "\033[31m"
-GREEN = "\033[32m"
-YELLOW = "\033[33m"
-RESET = "\033[0m"
+import network as net
 
 def request_contact(sender_email, receiver_email):
     user_data = load_user_data()
-    if sender_email in user_data and receiver_email in user_data:
+    if sender_email in gl.ONLINE_CONTACTS and receiver_email in user_data:
         if receiver_email not in user_data[sender_email]['contact_requests']:
             user_data[receiver_email]['contact_requests'].append(sender_email)
             save_user_data(user_data)
@@ -40,19 +40,19 @@ def accept_contact(email, sender_email):
 
 def list_contacts():
     '''list all online contacts in top down list format'''
-    print(GREEN + "Online Contacts:" + RESET)
-    if len(ONLINE_CONTACTS) == 0:
+    print("Online Contacts:")
+    if len(gl.ONLINE_CONTACTS) == 0:
         print("  No contacts online.")
     else:
-        for contact in ONLINE_CONTACTS:
-            print("  [{} ({})]".format(contact[0], (YELLOW + contact[1] + RESET)))
+        for contact in gl.ONLINE_CONTACTS:
+            print("  [{} ({})]".format(contact[0], (contact[1])))
 
     print("\033[0m")
 
 
 def handle_contact():
     user_data = load_user_data()
-    email = utility.USER_EMAIL
+    email = gl.USER_EMAIL
 
     if len(user_data) == 1:
         print("No other users to contact.")
@@ -99,15 +99,16 @@ class SecureDrop(Cmd):
 
 
     def do_exit(self, inp):
-        return True
+        raise KeyboardInterrupt()
+
     
     def help_exit(self):
         print("  'exit' -> Exit SecureDrop. Shorthand: x q Ctrl-d")
 
 
     def do_me(self, inp):
-        print("   Email: "+utility.USER_EMAIL)
-        print("   Alias: "+utility.USER_NAME+"\n")
+        print("   Email: "+gl.USER_EMAIL)
+        print("   Alias: "+gl.USER_NAME+"\n")
     
     def help_me(self):
         print("  'me'   -> Display current user info.")
@@ -138,4 +139,6 @@ def start_cmd():
         SecureDrop().cmdloop()
     except KeyboardInterrupt:
         print("\nExiting...")
+        net.shutdown_event.set()
+        net.stop_tcp_listener()
         exit()

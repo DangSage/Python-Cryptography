@@ -26,3 +26,6 @@ The project is divided into milestones for each feature of the project. Current 
 **Milestone 3 - Adding Contacts**
   - Use simple file structures for data storage.
   - Use Milestone 2 data to secure contact information.
+
+**Milestone 4 - Detecting Contacts**
+  - Use UDP connection to broadcast logins from other clients
