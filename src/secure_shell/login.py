@@ -2,7 +2,8 @@ from utility import (
     load_user_data,
     get_email, 
     get_password,
-    check_password
+    check_password,
+    contacts_dict_exist
 )
 import globals as gl
 
@@ -11,6 +12,7 @@ def login_loop():
     user_data = load_user_data()
     email = get_email()
     gl.USER_EMAIL = email
+    gl.CONTACTS = list(user_data[email]['contacts'])
 
     if email in user_data:
         gl.USER_NAME = user_data[email]['username']

@@ -48,8 +48,7 @@ def register_user():
     user_data[email] = {
         'username': name,
         'password': binascii.hexlify(salt).decode() + ":" + binascii.hexlify(hashed_password).decode(),
-        'contacts': [],
-        'contact_requests': []  
+        'contacts': []
     }
 
 

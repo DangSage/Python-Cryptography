@@ -16,7 +16,9 @@ from .data import (
     generate_key_pair,
     contacts_dict_exist,
     get_user_name_from_list,
-    check_contacts
+    verify_contact,
+    add_contact,
+    list_data
 )
 
 from .input import (

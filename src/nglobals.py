@@ -1,10 +1,26 @@
-import socket
 import subprocess
 import os
 
 own_ip = None
-potential_contact = ()
-ignore_bcast_port = []
+
+online_users = {} 
+'''list of online users on the network'''
+
+online_contacts = {} 
+'''list of trusted users on the network'''
+
+contact_requests = {} 
+'''list of contact requests received by the client'''
+
+out_contact_requests = {} 
+'''list of pending contact requests sent by the client'''
+
+ignore_bcast_port = [] 
+'''list of ports to ignore when broadcasting'''
+
+_tcpserver = None 
+'''TCP server object'''
+
 
 CERT = ""
 KEY = ""
@@ -15,6 +31,7 @@ tcp_port = 9900
 
 
 def gen_certificate(user_info):
+    '''Generate certificate and key for the user. Is used for all TCP connections'''
     global CERT, KEY
     # if windows, run the windows script
     if os.name == "nt":

@@ -1,129 +1,125 @@
 import ssl
+import json
 import socket
-from socketserver import BaseRequestHandler, TCPServer
-from utility import contacts_dict_exist
-from utility import check_contacts
-import globals as gl
 import nglobals as ng
+import globals as gl
+from socketserver import BaseRequestHandler, TCPServer
+from .ndata import parse_user_data, verify_contact_req, verify_user
+from utility import list_data, add_contact
+import traceback
 
-potential_contact = ng.potential_contact
-ignore_bcast_port = ng.ignore_bcast_port
+online_users = ng.online_users
 
-server = None
 
 class tcp_handler(BaseRequestHandler):
-    def handle(self):
-        """
-        This function is what can handle whether or not the sender is a contact
-        """
-        self.data = self.request.recv(1024).strip()
-        try:
-            if type(eval(self.data)) is tuple:
-                if contacts_dict_exist():
-                    self.data = eval(self.data)
-                    print(self.data)
-                    email_exists = check_contacts(self.data)
-                    if email_exists:
-                        self.request.sendall("Yes".encode())
-                    elif not email_exists:
-                        self.request.sendall("No".encode())
-                else:
-                    self.request.sendall("No".encode())
-        except SyntaxError:
-            confirmation = input(f"Contact <____> is sending a file. Accept (y/n)?")
 
-            if confirmation == 'y' or confirmation == 'Y':
-                f = open("recieved_file", "wb")
-                f.write(self.data)
-                running = True
-                while running:
-                    print("hang up in handle")
-                    self.data = self.request.recv(1024)
-                    if not self.data:
-                        break
-                    if self.data.decode() == "stop":
-                        running = False
-                        break
-                    f.write(self.data)
-                f.close()
-                self.request.sendall("AWK from server".encode())
+    def handle(self):
+        try:
+            self.data = self.request.recv(1024).decode()
+            action, data = json.loads(self.data)
+            if action == "REQUEST_CONTACT":
+                parsed_user = parse_user_data(data, ng.contact_requests)
+                if not parsed_user:
+                    raise Exception("Invalid data received")
+                print(f"Contact request received from '{parsed_user}'({self.client_address[0]}:{self.client_address[1]})")
+                self.request.sendall(json.dumps(["REQUEST_ACK", list_data()]).encode())
+            elif action == "ACCEPT_CONTACT":
+                # would only be getting this if this client sent a request
+                parsed_user = parse_user_data(data, ng.out_contact_requests)
+                ng.online_contacts[parsed_user] = ng.out_contact_requests.pop(parsed_user, None)
+                add_contact(gl.USER_EMAIL, [parsed_user, ng.online_contacts[parsed_user][0]])
+                print(f"Contact request accepted from '{parsed_user}'({self.client_address[0]}:{self.client_address[1]})")
+                self.request.sendall(json.dumps(["ACCEPT_ACK", list_data()]).encode())
+            elif action == "":
+                # send no back to client
+                self.request.sendall(json.dumps("No").encode())
             else:
-                print("File not accepted\n")
-        # self.request.sendall("AWK from server".encode())
+                # message
+                self.request.sendall(json.dumps("ping").encode())
+        except json.decoder.JSONDecodeError:
+            print("Invalid JSON data received" + self.client_address[0])
+            return None
+        except Exception as e:
+            self.request.sendall(json.dumps(["ERROR", str(e)]).encode())
+            traceback.print_exc()
 
 
 def stop_tcp_listen():
-    global server
-    server.shutdown()
-    server.server_close()
+    ng._tcpserver.shutdown()
+    ng._tcpserver.server_close()
 
 
 def tcp_listen(port):
-    global server
     host = ""
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    cntx.load_cert_chain(ng.CERT, ng.KEY)
-
-    server = TCPServer((host, port), tcp_handler)
-    server.socket = cntx.wrap_socket(server.socket, server_side=True)
+    cntx.verify_mode = ssl.CERT_REQUIRED
     try:
-        server.serve_forever()
-    except:
+        cntx.load_verify_locations(cafile="bin/ca.crt")
+        cntx.load_cert_chain(ng.CERT, ng.KEY)
+    except FileNotFoundError:
+        print("Certificate file not found")
+        return
+    except ssl.SSLError:
+        print("Invalid certificate file")
+        return
+
+    ng._tcpserver = TCPServer((host, port), tcp_handler)
+    ng._tcpserver.socket = cntx.wrap_socket(ng._tcpserver.socket, server_side=True)
+    try:
+        ng._tcpserver.serve_forever()
+    except KeyboardInterrupt:
         pass
     finally:
-        server.server_close()
+        ng._tcpserver.shutdown()
+        ng._tcpserver.server_close()
         print("TCP listener closed")
 
 
-def tcp_client(port, data, is_file=False):
+def tcp_client(port, data, action=None, is_file=False):
     host_ip = "localhost"
-
-    # Initialize a TCP client socket using SOCK_STREAM
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    cntx.load_verify_locations(ng.CERT)
-    cntx.load_cert_chain(ng.CERT, ng.KEY)
+    try:
+        cntx.load_verify_locations(cafile="bin/ca.crt")
+        cntx.load_cert_chain(certfile=ng.CERT, keyfile=ng.KEY)
+        with socket.create_connection((host_ip, port)) as s:
+            with cntx.wrap_socket(s, server_hostname="localhost") as ssl_s:
+                if not is_file:
+                    message = json.dumps([f"{action.upper()}_CONTACT" if action else "", data])
+                    ssl_s.sendall(message.encode())
+                received = ssl_s.recv(1024).decode()
+        
+        # wait for response from receiver
+        if received:
+            received_data = json.loads(received)
+            if isinstance(received_data, list) and len(received_data) == 2:
+                action, out_data = received_data
+                if action == "REQUEST_ACK":
+                    parsed_user = parse_user_data(out_data, ng.out_contact_requests)
+                    if not parsed_user:
+                        raise Exception("Invalid data received")
+                    print(f"Contact request sent to '{parsed_user}'")
+                elif action == "ACCEPT_ACK":
+                    parsed_user = parse_user_data(out_data, ng.online_contacts)
+                    if not parsed_user:
+                        raise Exception("Invalid data received")
+                    ng.online_contacts[parsed_user] = ng.contact_requests.pop(parsed_user, None)
+                    
+                    # write contact to file
+                    add_contact(gl.USER_EMAIL, [parsed_user, ng.online_contacts[parsed_user][0]])
+                    print(f"'{parsed_user}' accepted your contact request")
+            elif isinstance(received_data, str):
+                message = received_data
+            else:
+                print("Unexpected data format received")
+                    
+    except (FileNotFoundError, ssl.SSLError):
+        print("Certificate file not found or invalid")
+    except ConnectionRefusedError:
+        print(f"Connection refused by {host_ip}:{port}")
+    except json.decoder.JSONDecodeError:
+        print(f"Invalid JSON data received from {host_ip}:{port}\n\t{received}")
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()
 
-    s = cntx.wrap_socket(s, server_hostname="test.server")
-
-    if not is_file:
-        try:
-            # Establish connection to TCP server and exchange data
-            s.connect((host_ip, port))
-            s.sendall(data.encode())
-            # Read data from the TCP server and close the connection
-            recieved = s.recv(1024)
-        finally:
-            s.close()
-    elif is_file:
-        try:
-            try:
-                with open(data, 'rb') as f:
-
-                    f = open(data, "rb")
-                    s.connect((host_ip, port))
-                    l = f.read(1024)
-                    while l:
-                        s.send(l)
-                        print("Sent ", repr(l))
-                        l = f.read(1024)
-                    s.sendall("stop".encode())
-                    recieved = s.recv(1024)
-            except IOError as e:
-                print(f"Could not open the file you want to trasnfer {e}")
-                print(f"\tMake sure the file path is correct")
-        finally:
-            # s.send("stop")
-            f.close()
-            s.close()
-
-    if recieved.decode() == "Yes":
-        if potential_contact not in gl.ONLINE_CONTACTS:
-            gl.ONLINE_CONTACTS.append(potential_contact)
-            print("Potential contact " + potential_contact[0] + " added to online contacts")
-            ignore_bcast_port.append(potential_contact[3])
-    elif recieved.decode() == "No":
-        pass
-    else:
-        pass
-    
+        

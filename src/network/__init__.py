@@ -3,7 +3,9 @@ from time import sleep
 from threading import Thread, Event
 import globals as gl
 import nglobals as ng
+from .contact import *
 from .broadcast import *
+from .ndata import *
 from .tcp import *
 
 shutdown_event = Event()
@@ -20,18 +22,19 @@ def port_manager(bport, lport, max_attempts=1000):
             print(f"Broadcast port: {bport}\nTCP port: {lport}")
             return bport, lport
         except OSError:
-            print(f"Port {lport} is already in use.")
             bport += 1
             lport += 1
             attempts += 1
     print("Could not find an open port.")
+    ng.own_ip = socket.gethostbyname(socket.gethostname())
     return None, None
+
 
 def network_manager():
     ng.gen_certificate(gl.USER_EMAIL)
     ng.bcast_port, ng.tcp_listen = port_manager(ng.bcast_port, ng.tcp_listen)
 
-    # broadcast to other users that you exist
+    # broadcast socket setup (multicast)
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.bind(("", ng.bcast_port))
     
@@ -63,11 +66,16 @@ def network_manager():
     try:
         for p in procs:
             p.start()
-        while any(p.is_alive() for p in procs) and not shutdown_event.is_set():
+        # while all processes are alive and shutdown_event is not set
+        while all([p.is_alive() for p in procs]) and not shutdown_event.is_set():
             sleep(0.1)  # Check every 100 ms
-    except:
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
         shutdown_event.set()
-        if(tcp_listener.is_alive()):
+        if tcp_listener.is_alive():
             stop_tcp_listen()
-    for p in procs:
-        p.join()
+        for p in procs:
+            p.join()

@@ -7,6 +7,7 @@ from Cryptodome.Protocol.KDF import PBKDF2
 from Cryptodome.Hash import SHA256
 
 import globals as gl
+import nglobals as ng
 
 def save_user_data(user_data):
     with open(gl.USER_LIST, 'w') as file:
@@ -68,32 +69,68 @@ def get_user_name_from_list():
             return user_info["username"]
 
 
-def user_exists(user_dictionary, email):
-    for user_email, user_info in user_dictionary:
-        if user_email == email:
-            return True
-    return False
+def list_data():
+    '''
+    returns a JSON object:
+    [user_name, user_email, tcp_listen, bcast_port]
+    '''
+    data = [get_user_name_from_list(), gl.USER_EMAIL, ng.tcp_listen, ng.bcast_port]
+    return json.dumps(data)
 
 
-def check_contacts(data):
+def add_contact(email, contact_data):
+    '''add a contact to a user's contact list'''
+
+    # load user data from file
+    user_data = load_user_data()
+
+    if email not in user_data:
+        print("User not found!")
+        return
+    if contact_data[1] in user_data[email]['contacts']:
+        print("Contact already exists!")
+        return
+
+    contact_entry = {
+        "username": contact_data[0],
+        "email": contact_data[1]
+    }
+    user_data[email]['contacts'].append(contact_entry)
+    save_user_data(user_data)
+
+
+def verify_contact(email):
+    '''
+    verify if contact with email is in any contacts dictionary.
+    
+    return True if contact is in contacts dictionary
+    else return False
+    '''
     user_data = load_user_data()
 
     for user_email, user_info in user_data.items():
         if user_email == gl.USER_EMAIL:
-            return user_exists(user_info["contacts"], data[1])  # check if the email exists in the user's contacts
-
+            if "contacts" in user_info:
+                if email in user_info["contacts"]:
+                    return True
     return False
 
-        
+
 def contacts_dict_exist():
-    '''check if contacts dictionary exists in user_data.json for all users'''
+    '''
+    check if contacts dictionary exists in user_data.json for all users
+    
+    returns current user's contacts list if true
+    else returns False
+    '''
     with open(gl.USER_LIST, 'r') as file:
         data = json.load(file)
 
         for user_email, user_info in data.items():
             if "contacts" not in user_info:
                 return False
-    return True
+        # return list of contacts
+        return data[gl.USER_EMAIL]["contacts"]
 
     
 
