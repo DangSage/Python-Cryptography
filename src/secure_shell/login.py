@@ -1,30 +1,27 @@
 from utility import (
-    load_user_data, 
-    decrypt_password, 
-    MAX_ENTRY_ATTEMPTS,
-    USER_NAME,
-    USER_EMAIL,
+    load_user_data,
     get_email, 
-    get_password
+    get_password,
+    check_password,
+    contacts_dict_exist
 )
-import utility
+import globals as gl
 
 def login_loop():
-    global USER_EMAIL
-    global USER_NAME
     attempts = 0
     user_data = load_user_data()
     email = get_email()
-    utility.USER_EMAIL = email
+    gl.USER_EMAIL = email
+    gl.CONTACTS = list(user_data[email]['contacts'])
 
     if email in user_data:
-        utility.USER_NAME = user_data[email]['full name']
-        while attempts < MAX_ENTRY_ATTEMPTS:
+        gl.USER_NAME = user_data[email]['username']
+        while attempts < gl.MAX_ENTRY_ATTEMPTS:
             password = get_password()
-            private_key = user_data[email]['private_key'].encode()
-            stored_password = user_data[email]['password']
-            decrypted_password = decrypt_password(private_key, stored_password)
-            if decrypted_password == password:
+            # get salt and stored password hash from user_data
+            salt = bytes.fromhex(user_data[email]['password'].split(':')[0])
+            stored_password_hash = bytes.fromhex(user_data[email]['password'].split(':')[1])
+            if (check_password(salt, stored_password_hash, password)):
                 print("Login successful!")
                 return True
             else:
@@ -33,7 +30,7 @@ def login_loop():
     else:
         print("User with that email not registered!")
     
-    if(attempts == MAX_ENTRY_ATTEMPTS):
+    if(attempts == gl.MAX_ENTRY_ATTEMPTS):
         print("\nMax password attempts reached!")
     print("\nExiting...")
     return False

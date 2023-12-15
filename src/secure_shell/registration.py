@@ -1,13 +1,12 @@
 from utility import (
     load_user_data,
     save_user_data,
-    generate_key_pair,
-    encrypt_password,
     get_email,
     get_password,
-    MIN_PASS_LENGTH,
-    MAX_ENTRY_ATTEMPTS
+    hash_password
 )
+import globals as gl
+import binascii
 from getpass import getpass
 
 def valid_pass(password, confirm_password):
@@ -15,7 +14,7 @@ def valid_pass(password, confirm_password):
     if password != confirm_password:
         print("Passwords don't match.")
         return False
-    elif len(password) < MIN_PASS_LENGTH:
+    elif len(password) < gl.MIN_PASS_LENGTH:
         print("Password must be at least 8 characters long.")
         return False
     
@@ -40,21 +39,18 @@ def register_user():
         if valid_pass(password, confirm_password):
             break
         attempts += 1
-        if attempts >= MAX_ENTRY_ATTEMPTS:
+        if attempts >= gl.MAX_ENTRY_ATTEMPTS:
             print("Maximum password attempts reached.")
             return
 
-    private_key, public_key = generate_key_pair()
-    encrypted_password = encrypt_password(public_key, password)
-
+    salt, hashed_password = hash_password(password)
     user_data = load_user_data()
     user_data[email] = {
-        'private_key': private_key.decode(),
-        'full name': name,
-        'password': encrypted_password,
-        'contacts': [],
-        'contact_requests': []  
+        'username': name,
+        'password': binascii.hexlify(salt).decode() + ":" + binascii.hexlify(hashed_password).decode(),
+        'contacts': []
     }
+
 
     save_user_data(user_data)
     print("\nRegistration successful! Re-login...")
