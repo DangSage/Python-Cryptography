@@ -2,10 +2,6 @@
 import json
 import re
 import os
-from Cryptodome.PublicKey import RSA
-from Cryptodome.Protocol.KDF import PBKDF2
-from Cryptodome.Hash import SHA256
-
 import globals as gl
 import nglobals as ng
 
@@ -38,27 +34,6 @@ def check_email():
         else:
             print("Invalid Email. Please try again.")
             email_attempts += 1
-
-
-def hash_password(password):
-    salt = os.urandom(16)
-    password_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
-    return salt, password_hash
-
-
-def check_password(salt, password_hash, password):
-    new_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
-    return new_hash == password_hash
-
-
-def generate_key_pair():
-    private_key = RSA.generate(2048)
-    public_key = private_key.publickey()
-
-    private_pem = private_key.exportKey()
-    public_pem = public_key.exportKey()
-
-    return private_pem, public_pem
 
 
 def get_user_name_from_list():
@@ -131,7 +106,4 @@ def contacts_dict_exist():
                 return False
         # return list of contacts
         return data[gl.USER_EMAIL]["contacts"]
-
-    
-
 

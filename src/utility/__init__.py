@@ -11,14 +11,19 @@
 from .data import (
     load_user_data,
     save_user_data,
-    check_password,
-    hash_password,
-    generate_key_pair,
     contacts_dict_exist,
     get_user_name_from_list,
     verify_contact,
     add_contact,
     list_data
+)
+
+from .crypt import (
+    hash_password,
+    check_password,
+    encrypt_file,
+    decrypt_file,
+    pub_from_pem
 )
 
 from .input import (
