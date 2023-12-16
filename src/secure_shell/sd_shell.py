@@ -27,6 +27,14 @@ class SecureDrop(Cmd):
     def help_list(self):
         print("  'list' -> List all online contacts.")
 
+
+    def do_send(self, inp):
+        #TODO: send file
+        pass
+    def help_send(self):
+        print("  'send' -> Send a file to a contact.")
+
+
     def do_exit(self, inp):
         raise KeyboardInterrupt()
     def help_exit(self):
