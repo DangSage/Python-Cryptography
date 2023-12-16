@@ -63,7 +63,6 @@ def verify_contact_req(email):
     for key, value in ng.out_contact_requests.items():
         if value[0] == email:
             return True
-    print("Contact request not found!")
     return False
 
 
