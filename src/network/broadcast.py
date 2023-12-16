@@ -8,6 +8,8 @@ from .tcp import tcp_client
 
 
 def broadcast_listen(sock, shutdown_event):
+    ''' listen for broadcast messages from other users on the network '''
+    
     print("Listening for broadcast from socket", sock.getsockname())
     last_received = {}
     contact_emails = [contact["email"] for contact in gl.CONTACTS]
@@ -45,6 +47,7 @@ def broadcast_listen(sock, shutdown_event):
 
 
 def broadcast_send(port, shutdown_event):
+    ''' send broadcast message to all users on the network'''
     my_info = list_data()
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

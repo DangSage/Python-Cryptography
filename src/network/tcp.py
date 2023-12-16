@@ -13,37 +13,16 @@ online_users = ng.online_users
 
 class tcp_handler(BaseRequestHandler):
     def handle(self):
+        ''' Main handler for all TCP connections (in) '''
         try:
             self.data = self.request.recv(1024).decode()
             action, data = json.loads(self.data)
             if "FILE" in action:
-                # get file name
-                parts = action.split("_")
-                __, name, sender_email = parts
-                if not verify_contact(sender_email):
-                    raise Exception("File sender is not a contact, file rejected", sender_email)
-                print(f"Received from {user_name_of_email(sender_email)}")
-                decrypted_data = decrypt_file(data)
-                # save file
-                with open(f"{gl.DOWNLOAD_DIR}{name}", 'wb') as f:
-                    f.write(decrypted_data)
-                f.close()
-                print(f"File received: {name}")
-                self.request.sendall("File received".encode())
+                self.handle_file_action(action, data)
             elif action == "REQUEST_REQ":
-                username = parse_user_data(data, ng.contact_requests)
-                if not username:
-                    raise Exception("Invalid data received")
-                print(f"Contact request received from '{username}'({self.client_address[0]})")
-                self.request.sendall(json.dumps(["REQUEST_ACK", list_data()]).encode())
-
+                self.handle_request_req_action(data)
             elif action == "ACCEPT_REQ":
-                username = parse_user_data(data, ng.out_contact_requests)
-                ng.online_contacts[username] = ng.out_contact_requests.pop(username, None)
-                add_contact(gl.USER_EMAIL, [username, ng.online_contacts[username][0]])
-                print(f"Accepted '{username}'s' Request ({self.client_address[0]}:{self.client_address[1]})")
-                self.request.sendall(json.dumps(["ACCEPT_ACK", list_data()]).encode())
-
+                self.handle_accept_req_action(data)
             elif action == "":
                 self.request.sendall(json.dumps("No").encode())
             else:
@@ -55,13 +34,50 @@ class tcp_handler(BaseRequestHandler):
             traceback.print_exc()
 
 
+    def handle_file_action(self, action, data):
+        # Handle file action
+        parts = action.split("_")
+        __, name, sender_email = parts
+        if not verify_contact(sender_email):
+            raise Exception("File sender is not a contact, file rejected", sender_email)
+        print(f"Received from {user_name_of_email(sender_email)}")
+        decrypted_data = decrypt_file(data)
+
+        # save file
+        with open(f"{gl.DOWNLOAD_DIR}{name}", 'wb') as f:
+            f.write(decrypted_data)
+        print(f"File received: {name}")
+        self.request.sendall("File received".encode())
+
+
+    def handle_request_req_action(self, data):
+        # Handle request request action
+        username = parse_user_data(data, ng.contact_requests)
+        if not username:
+            raise Exception("Invalid data received")
+        
+        print(f"Contact request received from '{username}'({self.client_address[0]})")
+        self.request.sendall(json.dumps(["REQUEST_ACK", list_data()]).encode())
+
+
+    def handle_accept_req_action(self, data):
+        # Handle accept request action
+        username = parse_user_data(data, ng.out_contact_requests)
+        ng.online_contacts[username] = ng.out_contact_requests.pop(username, None)
+        
+        add_contact(gl.USER_EMAIL, [username, ng.online_contacts[username][0]])
+        print(f"Accepted '{username}'s' Request ({self.client_address[0]}:{self.client_address[1]})")
+        self.request.sendall(json.dumps(["ACCEPT_ACK", list_data()]).encode())
+
+
+
 def stop_tcp_listen():
     ng._tcpserver.shutdown()
     ng._tcpserver.server_close()
 
 
 def tcp_listen(port):
-    host = ""
+    host = "localhost"
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     cntx.verify_mode = ssl.CERT_REQUIRED
     try:
@@ -86,6 +102,7 @@ def tcp_listen(port):
 
 
 def tcp_client(port, data, action=None, is_file=False):
+    ''' Secondary handler for all TCP connections (out) '''
     host_ip = "localhost"
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
@@ -109,11 +126,11 @@ def tcp_client(port, data, action=None, is_file=False):
                 ssl_s.sendall(message.encode())
                 received = ssl_s.recv(1024).decode()
         
-        if received and not is_file:
-            if isinstance(json.loads(received), list) and len(json.loads(received)) == 2:
-                action, out_data = json.loads(received)
-                if action == "REQUEST_ACK":
-                    parsed_user = parse_user_data(out_data, ng.out_contact_requests)
+            if received and not is_file:
+                received_data = json.loads(received)
+                if isinstance(received_data, list) and len(received_data) == 2:
+                    action, out_data = received_data
+                    parsed_user = parse_user_data(out_data, ng.out_contact_requests if action == "REQUEST_ACK" else ng.online_contacts)
                     if not parsed_user:
                         raise Exception("Invalid data received")
                     print(f"Contact request sent to '{parsed_user}'")
@@ -124,17 +141,17 @@ def tcp_client(port, data, action=None, is_file=False):
                     ng.online_contacts[parsed_user] = ng.contact_requests.pop(parsed_user, None)
                     add_contact(gl.USER_EMAIL, [parsed_user, ng.online_contacts[parsed_user][0]])
                     print(f"'{parsed_user}' accepted your contact request")
-            elif isinstance(json.loads(received), str):
-                message = json.loads(received)
-            else:
-                print("Unexpected data format received")
-                return
+                elif isinstance(received_data, str):
+                    message = received_data
+                else:
+                    print("Unexpected data format received")
+                    return
             
-        elif received and is_file:
-            if received == "File received":
-                print("File sent")
-            else:
-                print(f"Could not send file: {received}")
+            elif received and is_file:
+                if received == "File received":
+                    print("File sent")
+                else:
+                    print(f"Could not send file: {received}")
     except (FileNotFoundError, ssl.SSLError, ConnectionRefusedError, json.decoder.JSONDecodeError, Exception) as e:
         print(f"Error: {e}")
         traceback.print_exc()
