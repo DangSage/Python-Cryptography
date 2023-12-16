@@ -12,7 +12,6 @@ online_users = ng.online_users
 
 
 class tcp_handler(BaseRequestHandler):
-
     def handle(self):
         try:
             self.data = self.request.recv(1024).decode()
@@ -84,15 +83,16 @@ def tcp_client(port, data, action=None, is_file=False):
         with socket.create_connection((host_ip, port)) as s:
             with cntx.wrap_socket(s, server_hostname="localhost") as ssl_s:
                 if not is_file:
-                    message = json.dumps([f"{action.upper()}_CONTACT" if action else "", data])
+                    message = json.dumps([f"{action.upper()}_REQ" if action else "", data])
                     ssl_s.sendall(message.encode())
+                else:
+                    ssl_s.sendall(data)
                 received = ssl_s.recv(1024).decode()
         
         # wait for response from receiver
         if received:
-            received_data = json.loads(received)
-            if isinstance(received_data, list) and len(received_data) == 2:
-                action, out_data = received_data
+            if isinstance(json.loads(received), list) and len(json.loads(received)) == 2:
+                action, out_data = json.loads(received)
                 if action == "REQUEST_ACK":
                     parsed_user = parse_user_data(out_data, ng.out_contact_requests)
                     if not parsed_user:
@@ -107,8 +107,8 @@ def tcp_client(port, data, action=None, is_file=False):
                     # write contact to file
                     add_contact(gl.USER_EMAIL, [parsed_user, ng.online_contacts[parsed_user][0]])
                     print(f"'{parsed_user}' accepted your contact request")
-            elif isinstance(received_data, str):
-                message = received_data
+            elif isinstance(json.loads(received), str):
+                message = json.loads(received)
             else:
                 print("Unexpected data format received")
                     
@@ -116,6 +116,7 @@ def tcp_client(port, data, action=None, is_file=False):
         print("Certificate file not found or invalid")
     except ConnectionRefusedError:
         print(f"Connection refused by {host_ip}:{port}")
+        return
     except json.decoder.JSONDecodeError:
         print(f"Invalid JSON data received from {host_ip}:{port}\n\t{received}")
     except Exception as e:

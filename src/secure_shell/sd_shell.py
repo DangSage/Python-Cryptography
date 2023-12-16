@@ -29,8 +29,7 @@ class SecureDrop(Cmd):
 
 
     def do_send(self, inp):
-        #TODO: send file
-        pass
+        net.send_file()
     def help_send(self):
         print("  'send' -> Send a file to a contact.")
 

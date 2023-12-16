@@ -1,5 +1,4 @@
 import json
-import globals as gl
 import nglobals as ng
 from utility import verify_contact
 

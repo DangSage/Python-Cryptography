@@ -1,9 +1,16 @@
 from .tcp import tcp_client
-import json
+import os
 import nglobals as ng
 import globals as gl
 from utility import yes_no_prompt, list_data, verify_contact
-from .ndata import list_users, list_non_contacts, verify_user, verify_contact_req, display_list
+from .ndata import (
+    list_users, 
+    list_online_contacts,
+    list_non_contacts, 
+    verify_user, 
+    verify_contact_req, 
+    display_list
+    )
 
 
 def request_contact():
@@ -63,3 +70,33 @@ def handle_contact():
         yes_no_prompt("Do you want to send a contact request (y/n)? ", 
                     lambda: request_contact())
     return
+
+
+def send_file():
+    if not list_online_contacts():
+        return False
+    contactee_email = input("Enter Email (q to quit): ")
+    # if contactee_email is an exit command
+    for cmd in gl.EXIT_CMD:
+        if contactee_email == cmd:
+            return False
+    if not verify_user(contactee_email):
+        print("User not online. Please try again.")
+        return False
+
+    file_path = input("Enter file path: ")
+    for cmd in gl.EXIT_CMD:
+        if file_path == cmd:
+            return False
+    if not os.path.isfile(file_path):
+        print("File does not exist!")
+        return False
+
+    try:
+        yes_no_prompt(
+            f"File: {file_path}\nContact:{contactee_email}?\n Send file to contact? (y/n) >", 
+            lambda: tcp_client(verify_user(contactee_email), open(file_path, "rb").read(), "send", True))
+    
+    except Exception as e:
+        print("Error: Could not send file: ", e)
+        
