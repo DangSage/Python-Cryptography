@@ -15,7 +15,9 @@ from .data import (
     get_user_name_from_list,
     verify_contact,
     add_contact,
-    list_data
+    list_data,
+    display_list,
+    strip_file_path
 )
 
 from .crypt import (

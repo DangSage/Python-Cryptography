@@ -13,6 +13,8 @@ shutdown_event = Event()
 def port_manager(bport, lport, max_attempts=1000):
     test_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     attempts = 0
+    # get own ipv4 address
+    ng.own_ip = socket.gethostbyname(socket.gethostname())
     while attempts < max_attempts:
         try:
             test_socket.bind(("", bport))
@@ -26,7 +28,6 @@ def port_manager(bport, lport, max_attempts=1000):
             lport += 1
             attempts += 1
     print("Could not find an open port.")
-    ng.own_ip = socket.gethostbyname(socket.gethostname())
     return None, None
 
 
@@ -66,6 +67,7 @@ def network_manager():
     try:
         for p in procs:
             p.start()
+        ng.network_ready.set()
         # while all processes are alive and shutdown_event is not set
         while all([p.is_alive() for p in procs]) and not shutdown_event.is_set():
             sleep(0.1)  # Check every 100 ms
@@ -79,3 +81,4 @@ def network_manager():
             stop_tcp_listen()
         for p in procs:
             p.join()
+        print(" └─>Network manager closed\n")

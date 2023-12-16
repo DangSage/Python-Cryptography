@@ -2,8 +2,7 @@ from utility import (
     load_user_data,
     get_email, 
     get_password,
-    check_password,
-    contacts_dict_exist
+    check_password
 )
 import globals as gl
 
@@ -11,10 +10,10 @@ def login_loop():
     attempts = 0
     user_data = load_user_data()
     email = get_email()
-    gl.USER_EMAIL = email
-    gl.CONTACTS = list(user_data[email]['contacts'])
 
     if email in user_data:
+        gl.USER_EMAIL = email
+        gl.CONTACTS = list(user_data[email]['contacts'])
         gl.USER_NAME = user_data[email]['username']
         while attempts < gl.MAX_ENTRY_ATTEMPTS:
             password = get_password()

@@ -12,15 +12,16 @@ def broadcast_listen(sock, shutdown_event):
     last_received = {}
     contact_emails = [contact["email"] for contact in gl.CONTACTS]
     sock.settimeout(1)
+    
     while not shutdown_event.is_set():
         try:
-            clients_to_users = {details[3]: user for user, details in ng.online_users.items()}
-
             data, addr = sock.recvfrom(4096)
             data = json.loads(data.decode())  # Parse the data as JSON
             last_received[addr] = time.time()  # Update the last received time
             user_info = [data[1], data[2], data[3], addr]
             ng.online_users[data[0]] = user_info
+
+            clients_to_users = {details[3]: user for user, details in ng.online_users.items()}
 
             if data[1] in contact_emails and data[0] not in ng.online_contacts:
                 ng.online_contacts[data[0]] = user_info
@@ -31,16 +32,16 @@ def broadcast_listen(sock, shutdown_event):
             disconnected_clients = [client for client, last_time in last_received.items() if current_time - last_time > 4]
             for client in disconnected_clients:
                 print(f"{clients_to_users.get(client)} disconnected")
-                last_received.pop(client)
-                ng.online_users.pop(client, None)
-                ng.online_contacts.pop(client, None)
+                last_received.pop(client, None)
+                ng.online_users.pop(clients_to_users.get(client), None)
+                ng.online_contacts.pop(clients_to_users.get(client), None)
             continue
                         
         except Exception as e:
             print(f"Error in broadcast_listener: {e}")
             break  # Stop the loop if an error occurs
     sock.close()
-    print("Broadcast listener closed")
+    print(" ├─Broadcast listener closed")
 
 
 def broadcast_send(port, shutdown_event):
@@ -61,4 +62,4 @@ def broadcast_send(port, shutdown_event):
         for user in ng.online_users:
             tcp_client(ng.online_users[user][2], my_info, "disconnect")
         s.close()
-        print("Broadcast sender closed")
+        print(" ├─Broadcast sender closed")

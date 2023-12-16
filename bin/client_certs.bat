@@ -1,6 +1,9 @@
 @echo off
 setlocal
 
+:: Remove the client certificate directory if it already exists
+if exist bin\certs\client_%1 rmdir /s /q bin\certs\client_%1
+
 :: Create the client certificate directory in the current directory
 mkdir bin\certs\client_%1
 

@@ -9,7 +9,8 @@ from .ndata import (
     list_non_contacts, 
     verify_user, 
     verify_contact_req, 
-    display_list
+    display_list,
+    user_name_of_email
     )
 
 
@@ -21,8 +22,11 @@ def request_contact():
             return False
     if not verify_user(contactee_email):
         print("User not online. Please try again.")
+        return False
     elif verify_contact_req(contactee_email) or verify_contact(contactee_email):
         print("Contact already added. Please try again.")
+        return False
+
     try:
         tcp_client(verify_user(contactee_email), list_data(), "request")
     except Exception as e:
@@ -66,6 +70,7 @@ def handle_contact():
             return
     else:
         print("You have no incoming contact requests.")
+        
     if list_non_contacts():
         yes_no_prompt("Do you want to send a contact request (y/n)? ", 
                     lambda: request_contact())
@@ -92,11 +97,11 @@ def send_file():
         print("File does not exist!")
         return False
 
+    file_name = file_path.split("/")[-1]
     try:
         yes_no_prompt(
-            f"File: {file_path}\nContact:{contactee_email}?\n Send file to contact? (y/n) >", 
-            lambda: tcp_client(verify_user(contactee_email), open(file_path, "rb").read(), "send", True))
-    
+            f"File: {file_path}\nContact: {user_name_of_email(contactee_email)}\nSend file to contact? (y/n) >", 
+            lambda: tcp_client(verify_user(contactee_email), file_path, file_name, True))
     except Exception as e:
         print("Error: Could not send file: ", e)
         

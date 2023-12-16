@@ -3,8 +3,7 @@ import globals as gl
 from cmd import Cmd
 import network as net
 import nglobals as ng
-import time
-
+from utility import display_list
 
 class SecureDrop(Cmd):
     prompt = "secure_drop> "
@@ -41,12 +40,15 @@ class SecureDrop(Cmd):
 
 
     def do_me(self, inp):
-        print("USER: "+gl.USER_NAME)
-        print("   ├──Email: "+gl.USER_EMAIL)
-        print("   └──Network Ports:")
-        print("        ├──TCP: "+str(ng.tcp_listen))
-        print("        └──UDP: "+str(ng.bcast_port))
-        print()
+        print("User: {}".format(gl.USER_NAME))
+        print(" ├─Network")
+        print(" |  ├─IP: {}".format(ng.own_ip))
+        print(" |  └─Ports: ")
+        print(" |      ├─TCP: {}".format(ng.tcp_port))
+        print(" |      └─UDP: {}".format(ng.bcast_port))
+        print(" └─Email: '{}'".format(gl.USER_EMAIL))
+        print("")
+
     def help_me(self):
         print("    'me' -> Display current user info.")
 
@@ -77,9 +79,8 @@ class SecureDrop(Cmd):
 
 
 def start_cmd():
-    # wait a bit for network to start
-    time.sleep(0.5)
     try:
+        ng.network_ready.wait()
         SecureDrop().cmdloop()
     except:
         print("\nExiting...")

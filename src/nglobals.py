@@ -1,4 +1,5 @@
 import subprocess
+from threading import Event
 import os
 
 own_ip = None
@@ -21,6 +22,7 @@ ignore_bcast_port = []
 _tcpserver = None 
 '''TCP server object'''
 
+network_ready = Event()
 
 CERT = ""
 KEY = ""

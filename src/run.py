@@ -10,6 +10,7 @@ import globals as gl
 from network import network_manager
 from threading import Thread
 
+
 def start():
     try:
         if load_user_data() != {}:

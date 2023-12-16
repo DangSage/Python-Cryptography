@@ -44,6 +44,39 @@ def get_user_name_from_list():
             return user_info["username"]
 
 
+def strip_file_path(file_path):
+    '''strip file path from file name'''
+    file_name = os.path.basename(file_path)
+    return file_name
+
+
+def display_list(msg1, data_dict, msg2, prefix=""):
+    '''display list of data in branched-list format
+    i = index of item in list (for formatting)
+    item = item in list (for formatting)'''
+
+    print(msg1)
+    if len(data_dict) == 0:
+        print(f"{prefix} └─{msg2}\n")
+        return False
+    else:
+        for i, (key, value) in enumerate(data_dict.items()):
+            if isinstance(value, dict):
+                if i == len(data_dict) - 1:
+                    print(f"{prefix} └─{key}:")
+                elif i == 0:
+                    print(f"{prefix} ├─{key}:")
+                else:
+                    display_list("", value, "No items.", prefix + " │ ")
+            else:
+                if i == len(data_dict) - 1:
+                    print(f"{prefix} └─{key}: {value}")
+                else:
+                    print(f"{prefix} ├─{key}: {value}")
+        print()
+        return True
+
+
 def list_data():
     '''
     returns a JSON object:
@@ -83,11 +116,14 @@ def verify_contact(email):
     '''
     user_data = load_user_data()
 
-    for user_email, user_info in user_data.items():
-        if user_email == gl.USER_EMAIL:
-            if "contacts" in user_info:
-                if email in user_info["contacts"]:
-                    return True
+    gl.CONTACTS = user_data[gl.USER_EMAIL]["contacts"]
+    for contact in gl.CONTACTS:
+        if email == contact["email"]:
+            return True
+    for contact in ng.online_contacts:
+        if email == contact["email"]:
+            return True
+        
     return False
 
 

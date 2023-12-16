@@ -1,26 +1,6 @@
 import json
 import nglobals as ng
-from utility import verify_contact
-
-def display_list(msg1, data_dict, msg2):
-    '''display list of data in top down list format
-    i = index of item in list (for formatting)
-    item = item in list (for formatting)'''
-
-    print(msg1)
-    if len(data_dict) == 0:
-        print(f" └─{msg2}\n")
-        return False
-    else:
-        for key, value in data_dict.items():
-            #if last item in list
-            if key == list(data_dict.keys())[-1]:
-                print(" └─", end="")
-            else:
-                print(" ├─", end="")
-            print(f"─{key}: {value}")
-        print()
-        return True
+from utility import display_list
 
 
 def list_users():
@@ -28,13 +8,33 @@ def list_users():
 
 
 def list_non_contacts():
-    non_contacts = {key: value for key, value in ng.online_users.items() if key not in ng.online_contacts}
+    non_contacts = {
+        key: value for key, value in ng.online_users.items() if key not in ng.contact_requests and 
+        key not in ng.out_contact_requests and key not in ng.online_contacts}
     return display_list("Online Users:", non_contacts, "No users to contact.")
 
 
 def list_online_contacts():
     '''list all online contacts in top down list format'''
     return display_list("Online Contacts:", ng.online_contacts, "No online contacts.")
+
+
+def user_name_of_connection(sock):
+    '''return the username of the user connected to sock'''
+    _, sock_port = sock.getpeername()
+    for user, info in ng.online_users.items():
+        print(f"{user}, {info[1]} vs {sock_port}")
+        if info[1] == sock_port:
+            return user
+    raise ValueError("No user found with the given socket port number")
+
+
+def user_name_of_email(email):
+    '''return the username of the user with the given email'''
+    for user, info in ng.online_users.items():
+        if info[0] == email:
+            return user
+    raise ValueError("No user found with the given email")
 
 
 def verify_user(email):
@@ -63,6 +63,7 @@ def verify_contact_req(email):
     for key, value in ng.out_contact_requests.items():
         if value[0] == email:
             return True
+    print("Contact request not found!")
     return False
 
 
