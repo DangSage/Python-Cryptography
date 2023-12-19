@@ -67,7 +67,7 @@ def display_list(msg1, data_dict, msg2, prefix="", it=0):
     if it == 0:
         print(msg1)
     if len(data_dict) == 0:
-        print(f"{prefix} └─{msg2}\n")
+        print(f"{prefix} └─{msg2}")
         return False
     else:
         for i, (key, value) in enumerate(data_dict.items()):
