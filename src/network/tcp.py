@@ -182,7 +182,7 @@ def tcp_client(port, data, extra=None, is_file=False):
                         ng.contact_requests.pop(parsed_user, None)
                         add_contact(json.loads(out_data))
                         # print contact most recently added
-                        display_list("Contact added", {json.loads(out_data)}, "No contacts added")
+                        display_list("Contact added", ng.online_contacts, "No contacts added")
                 else:
                     print("Unexpected data format received")
             elif received and is_file:
