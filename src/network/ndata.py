@@ -14,8 +14,10 @@ def clear_user_lists(username):
 
 
 def list_users():
+    '''
+    list all users on the network in tree branch format
+    '''
     bool = display_list("Online Users:", ng.online_users, "No users online.")
-    print()
     return bool
 
 
@@ -24,29 +26,21 @@ def list_non_contacts():
         key: value for key, value in ng.online_users.items() if key not in ng.contact_requests and 
         key not in ng.out_contact_requests and key not in ng.online_contacts}
     bool = display_list("Online Users:", non_contacts, "No users to contact.")
-    print()
     return bool
 
 
 def list_online_contacts():
-    '''list all online contacts in top down list format'''
+    '''
+    list all online contacts in tree branch format
+    '''
     bool = display_list("Online Contacts:", ng.online_contacts, "No online contacts.")
-    print()
     return bool
 
 
-def user_name_of_connection(sock):
-    '''return the username of the user connected to sock'''
-    _, sock_port = sock.getpeername()
-    for user, info in ng.online_users.items():
-        print(f"{user}, {info['tcp']} vs {sock_port}")
-        if info['tcp'] == sock_port:
-            return user
-    raise ValueError("No user found with the given socket port number")
-
-
 def user_name_of_email(email):
-    '''return the username of the user with the given email'''
+    '''
+    return the username of the user with the given email
+    '''
     for user, info in ng.online_users.items():
         if info['email'] == email:
             return user
@@ -54,16 +48,27 @@ def user_name_of_email(email):
 
 
 def verify_timestamp(timestamp):
-    '''verify if timestamp is valid'''
+    '''
+    check if timestamp is >= current time
+
+    return True if timestamp is valid
+    '''
     timestamp_datetime = datetime.fromisoformat(timestamp)
+    # add 1 second to timestamp to account for time differences
+    timestamp_datetime = timestamp_datetime.replace(second=timestamp_datetime.second + 1)
     now = datetime.now()
-    if timestamp_datetime > now:
+    if timestamp_datetime < now:
         return False
     return True
 
 
 def control_flow(limit, counter, start_time):
-    ''' manages the flow control of messages '''
+    '''
+    control the flow of messages sent and received
+
+    if counter >= limit, then print the number of messages processed in the last second,
+    and sleep for the remaining time in the second.
+    '''
     counter += 1
     if counter >= limit:
         elapsed_time = time.time() - start_time

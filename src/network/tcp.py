@@ -32,7 +32,7 @@ class tcp_handler(BaseRequestHandler):
             counter, start_time = control_flow(message_limit, counter, start_time)
             action, data, timestamp = json.loads(self.data)
             if not verify_timestamp(timestamp):
-                raise Exception("Invalid timestamp received")
+                raise IndexError("Invalid timestamp received")
             
             if "FILE" in action:
                 self.handle_file_action(action, data)
@@ -44,7 +44,7 @@ class tcp_handler(BaseRequestHandler):
                 self.handle_accept_req_action(data)
             else:
                 self.request.sendall(json.dumps("No").encode())
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, IndexError, KeyError):
             self.request.sendall(json.dumps("Invalid data received").encode())
         except (ValueError, Exception) as e:
             self.request.sendall(json.dumps(["ERROR", str(e)]).encode())

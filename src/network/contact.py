@@ -55,6 +55,11 @@ def accept_contact():
 
 
 def handle_contact():
+    '''
+    Handle contact requests, both incoming and outgoing
+
+    Incoming contact requests are displayed and the user is prompted to accept or reject them
+    '''
     if ng.online_users == {}:
         list_users()
         return

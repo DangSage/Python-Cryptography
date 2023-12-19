@@ -21,7 +21,9 @@ def save_user_data(user_data):
 
 
 def load_user_data():
-    ''' load user data from file users.json '''
+    '''
+    load user data from USER_LIST file
+    '''
     if os.path.exists(gl.USER_LIST):
         with open(gl.USER_LIST, 'r') as file:
             try:
@@ -56,13 +58,19 @@ def get_user_name_from_list():
 
 
 def strip_file_path(file_path):
-    '''strip file path from file name'''
+    '''
+    strip file path from file name
+    '''
     file_name = os.path.basename(file_path)
     return file_name
 
 
 def display_list(msg1, data_dict, msg2, prefix="", it=0):
-    '''display list of data in branched-list format'''
+    '''
+    display list of data in tree format, using prefix to display tree structure
+
+    all data is displayed as a dictionary, using box-drawing characters to display tree structure
+    '''
 
     if it == 0:
         print(msg1)
@@ -77,7 +85,7 @@ def display_list(msg1, data_dict, msg2, prefix="", it=0):
                     new_prefix = prefix + "  "
                 else:
                     print(f"{prefix} ├─{key}:")
-                    new_prefix = prefix + " |"
+                    new_prefix = prefix + " │"
                 display_list("", value, "No items.", new_prefix + "  ", it+1)
             else:
                 if i == len(data_dict) - 1:
@@ -90,7 +98,7 @@ def display_list(msg1, data_dict, msg2, prefix="", it=0):
 def list_data():
     '''
     returns a JSON object:
-    [user_name, user_email, tcp_listen, bcast_port]
+    [ username, user email, tcp port, udp port ]
     '''
     data = {'username': get_user_name_from_list(), 'email':gl.USER_EMAIL, 
             'tcp':ng.tcp_listen, 'udp':ng.bcast_port}
@@ -98,7 +106,9 @@ def list_data():
 
 
 def add_contact(contact_data):
-    '''add a contact to a user's contact list'''
+    '''
+    add a contact to a user's contact list in USER_LIST file
+    '''
 
     # load user data from file
     user_data = load_user_data()

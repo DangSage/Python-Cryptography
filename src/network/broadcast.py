@@ -10,14 +10,16 @@ from .tcp import tcp_client
 
 
 def broadcast_listen(sock):
-    ''' listen for broadcast messages from other users on the network '''
+    '''
+    listen for broadcast messages from other users on the network at clients broadcast port
+    '''
     
     print("Listening for broadcast from socket", sock.getsockname())
     last_received = {}
     contact_emails = [contact["email"] for contact in gl.CONTACTS]
     sock.settimeout(1)
 
-    message_limit = 500 # messages per second
+    message_limit = 500 # messages/second
     counter = 0
     start_time = time.time()
     clients_to_users = {}
@@ -42,7 +44,7 @@ def broadcast_listen(sock):
                 ng.online_contacts[data['username']] = user_info
                 print(f"Contact '{data['username']}' is online")
 
-        except socket.timeout:
+        except socket.timeout:  # Normal inactivity, check if some clients have disconnected
             current_time = time.time()
             disconnected_clients = [client for client, last_time in last_received.items() if current_time - last_time > 4]
 
@@ -67,7 +69,9 @@ def broadcast_listen(sock):
 
 
 def broadcast_send(port):
-    '''send broadcast message to all users on the network'''
+    '''
+    send broadcast message to all users on the network
+    '''
     my_info = list_data()
     my_info['session_token'] = ng.session_token
     my_info = json.dumps(my_info)
@@ -81,8 +85,6 @@ def broadcast_send(port):
 
     # Send a disconnect message to all users
     for user in ng.online_users:
-        print(f"Sending disconnect message to {user}")
         tcp_client(ng.online_users[user]['tcp'], my_info, "disconnect")
-        print(f"Disconnect message sent to {user}")
     s.close()
     print(" ├─Broadcast sender closed")
