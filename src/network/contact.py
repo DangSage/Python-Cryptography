@@ -1,5 +1,6 @@
 from .tcp import tcp_client
 import os
+import json
 import nglobals as ng
 import globals as gl
 from utility import yes_no_prompt, list_data, verify_contact, strip_file_path
@@ -27,8 +28,11 @@ def request_contact():
         print("Contact already added. Please try again.")
         return False
 
+    my_info = list_data()
+    my_info = json.dumps(my_info)
+
     try:
-        tcp_client(verify_user(contactee_email), list_data(), "request")
+        tcp_client(verify_user(contactee_email), my_info, "request")
     except Exception as e:
         print("Error: Could not send contact request: ", e)
 
@@ -40,8 +44,12 @@ def accept_contact():
             return False
     if not verify_contact_req(contacter_email):
         return False
+    
+    my_info = list_data()
+    my_info = json.dumps(my_info)
+
     try:
-        tcp_client(verify_user(contacter_email), list_data(), "accept")
+        tcp_client(verify_user(contacter_email), my_info, "accept")
     except Exception as e:
         print("Error: Could not accept contact request: ", e)
 

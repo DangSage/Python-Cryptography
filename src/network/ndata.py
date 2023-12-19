@@ -14,19 +14,25 @@ def clear_user_lists(username):
 
 
 def list_users():
-    return display_list("Online Users:", ng.online_users, "No users online.")
+    bool = display_list("Online Users:", ng.online_users, "No users online.")
+    print()
+    return bool
 
 
 def list_non_contacts():
     non_contacts = {
         key: value for key, value in ng.online_users.items() if key not in ng.contact_requests and 
         key not in ng.out_contact_requests and key not in ng.online_contacts}
-    return display_list("Online Users:", non_contacts, "No users to contact.")
+    bool = display_list("Online Users:", non_contacts, "No users to contact.")
+    print()
+    return bool
 
 
 def list_online_contacts():
     '''list all online contacts in top down list format'''
-    return display_list("Online Contacts:", ng.online_contacts, "No online contacts.")
+    bool = display_list("Online Contacts:", ng.online_contacts, "No online contacts.")
+    print()
+    return bool
 
 
 def user_name_of_connection(sock):
@@ -111,11 +117,9 @@ def parse_user_data(data, user_dict):
     try:
         # convert data to list
         data = json.loads(data)
-        
-        key = data['name']
-        values = [data['email'], data['tcp'], data['udp'], data['session_token']] # email, tcp_port, bcast_port
-        user_dict.update({key: values})
-        return key
+                    
+        user_dict[data['username']] = {'email':data['email'], 'tcp':data['tcp'], 'udp':data['udp']}
+        return data['email']
     except IndexError:
         print("Client info invalid index {}".format(data))
         return False

@@ -9,7 +9,6 @@
 # This package also contains the globals.py file
 
 from .data import (
-    gen_certificate,
     load_user_data,
     save_user_data,
     contacts_dict_exist,
@@ -38,4 +37,8 @@ from .input import (
     get_password,
     get_email_and_password,
     yes_no_prompt
+)
+
+from .quit import (
+    gen_certificate
 )

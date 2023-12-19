@@ -28,7 +28,7 @@ def login_loop():
                 print("Incorrect password!")
                 attempts += 1
     elif verify_session(email):
-        print("User already logged in!")
+        print("User already logged in! (Session was not closed properly.)")
     else:
         print("User with that email not registered!")
     

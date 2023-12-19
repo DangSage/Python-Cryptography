@@ -4,8 +4,6 @@ import re
 import os
 import globals as gl
 import nglobals as ng
-import subprocess
-import atexit
 
 
 def write_session_token():  # not in utility module
@@ -15,35 +13,6 @@ def write_session_token():  # not in utility module
     user_data = load_user_data()
     user_data[gl.USER_EMAIL]["session_token"] = ng.session_token
     save_user_data(user_data)
-
-
-def cleanup():  # not in utility module
-    os.remove(ng.KEY)
-    os.remove(ng.CERT)
-    os.rmdir("bin/certs/client_"+gl.USER_EMAIL)
-    
-    user_data = load_user_data()
-    user_data[gl.USER_EMAIL]["session_token"] = None
-    save_user_data(user_data)
-
-
-def gen_certificate(user_info):
-    '''Generate certificate and key for the user. Is used for all TCP connections'''
-    bash_path = "C:/Program Files/Git/git-bash.exe"  # Update this if your Git Bash is installed in a different location
-    script_path = "./bin/client_certs.sh"
-    cmd = []
-
-    if os.name == 'nt':
-        cmd = [bash_path, "-c", f"{script_path} {user_info}"]
-    else:
-        cmd = [script_path, user_info]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-
-    ng.CERT = "bin/certs/client_"+user_info+'/' + user_info + "cert.crt"
-    ng.KEY = "bin/certs/client_"+user_info+'/' + user_info + "key.pem"
-
-    print(result.stdout)
-    atexit.register(cleanup)
 
 
 def save_user_data(user_data):
@@ -123,29 +92,26 @@ def list_data():
     returns a JSON object:
     [user_name, user_email, tcp_listen, bcast_port]
     '''
-    data = {'name': get_user_name_from_list(), 'email':gl.USER_EMAIL, 
+    data = {'username': get_user_name_from_list(), 'email':gl.USER_EMAIL, 
             'tcp':ng.tcp_listen, 'udp':ng.bcast_port}
     return data
 
 
-def add_contact(email, contact_data):
+def add_contact(contact_data):
     '''add a contact to a user's contact list'''
 
     # load user data from file
     user_data = load_user_data()
 
-    if email not in user_data:
-        print("User not found!")
-        return
-    if contact_data[1] in user_data[email]['contacts']:
+    if contact_data['email'] in user_data[gl.USER_EMAIL]['contacts']:
         print("Contact already exists!")
         return
 
     contact_entry = {
-        "username": contact_data[0],
-        "email": contact_data[1]
+        "username": contact_data['username'],
+        "email": contact_data['email']
     }
-    user_data[email]['contacts'].append(contact_entry)
+    user_data[gl.USER_EMAIL]['contacts'].append(contact_entry)
     save_user_data(user_data)
 
 

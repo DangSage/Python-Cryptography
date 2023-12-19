@@ -34,13 +34,13 @@ def broadcast_listen(sock):
 
             last_received[addr] = time.time()  # Update the last received time
             user_info = {'email': data['email'], 'tcp': data['tcp'], 'udp': data['udp'], 'addr': addr}
-            ng.online_users[data['name']] = user_info
+            ng.online_users[data['username']] = user_info
 
             clients_to_users = {details['addr']: user for user, details in ng.online_users.items()}
 
-            if data['email'] in contact_emails and data['name'] not in ng.online_contacts:
-                ng.online_contacts[data['name']] = user_info
-                print(f"Contact '{data['name']}' is online")
+            if data['email'] in contact_emails and data['username'] not in ng.online_contacts:
+                ng.online_contacts[data['username']] = user_info
+                print(f"Contact '{data['username']}' is online")
 
         except socket.timeout:
             current_time = time.time()

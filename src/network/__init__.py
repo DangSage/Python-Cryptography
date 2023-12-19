@@ -30,6 +30,7 @@ def port_manager(bport, lport, max_attempts=1000):
 
 def network_manager():
     session_token()
+    write_session_token()
     gen_certificate(gl.USER_EMAIL)
     ng.bcast_port, ng.tcp_listen = port_manager(ng.bcast_port, ng.tcp_listen)
 

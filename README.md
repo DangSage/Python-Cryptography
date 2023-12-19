@@ -40,22 +40,37 @@ The project is divided into milestones for each feature of the project. Current 
 ## Features
 
 **User Registration and Login**
-- The login shell detects for `users.json` and performs a first-time register function (there should only be 1 user per client).
-- Passwords are salted and hashed using SHA256 for secure storage in `users.json`.
-- Every login generates a different key/certificate pair for communication.
+- Detects `users.json` and performs a first-time register function (one user per client).
+- Salts and hashes passwords using SHA256 for secure storage in `users.json`.
+- Generates a different key/certificate pair for communication on every login.
 
 **Broadcast UDP**
-- The `broadcast_listen` thread listens on a specific port.
-- The `broadcast_send` thread sends a ping with the client's data to ports 1337-2000.
-- These threads build a database of online clients (not contacts).
+- Listens on a specific port with `broadcast_listen` thread.
+- Sends a ping with the client's data to ports 1337-2000 with `broadcast_send` thread.
+- Builds a database of online clients (not contacts).
 
 **TCP Connection with SSL/TLS**
-- Real data is transferred via a TCP connection with an SSL/TLS scheme.
-- The TCP connection is made by wrapping a TLS socket with the user's key (generated on startup) and certificate (generated with the CA in the project directory).
-- To verify data being sent, every request made over the TCP connection includes a copy of the public certificate being exchanged.
+- Transfers real data via a TCP connection with an SSL/TLS scheme.
+- Makes the TCP connection by wrapping a TLS socket with the user's key (generated on startup) and certificate (generated with the CA in the project directory).
+- Includes a copy of the public certificate being exchanged in every request made over the TCP connection to verify data being sent.
 
 **File Transfer**
-- Files are sent over the TLS handshake connection using symmetric encryption.
-- The system generates an AES symmetric key, encrypts the file with this key, and then encrypts the key with the recipient's public key.
-- The encrypted file info is encoded into a base64 encoded tuple and sent to the recipient.
-- The recipient decrypts the AES symmetric key with their own RSA private key, decrypts the file from the base64 decoded encrypted file info, and writes it to the file name in the project directories /downloads folder.
+- Sends files over the TLS handshake connection using symmetric encryption.
+- Generates an AES symmetric key, encrypts the file with this key, and then encrypts the key with the recipient's public key.
+- Encodes the encrypted file info into a base64 encoded tuple and sends it to the recipient.
+- Decrypts the AES symmetric key with their own RSA private key, decrypts the file from the base64 decoded encrypted file info, and writes it to the file name in the project directories /downloads folder.
+
+**Control Flow Management**
+- Implements a message limit and a counter to track the number of processed messages, along with a timestamp marking the start of the counter.
+- Increments the counter with each processed message. Upon reaching the limit, measures the time elapsed since the start.
+- Pauses for the remaining duration if less than a second has passed, effectively capping the message processing rate to the set limit per second.
+- Provides safeguard against flooding DoS attacks by restricting the volume of requests that can be made.
+
+**Timestamps**
+- Embeds a timestamp iso object into every File transfer request.
+- Provides protection against replay attacks.
+
+**Session Token**
+- Generates a unique random string of characters as UID for each login session.
+- Associates the session token with the user's email for every online user they ping, it remains unchanged until the users session quits and goes offline.
+- Ensures that there can be only one session per device on a network, and also ensures that any device on the local network cannot impersonate the client's user when online.

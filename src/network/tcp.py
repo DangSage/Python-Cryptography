@@ -12,7 +12,8 @@ from .ndata import (
     parse_user_data,
     user_name_of_email, 
     verify_user, 
-    verify_timestamp
+    verify_timestamp,
+    verify_contact_req
 )
 from utility import *
 import traceback
@@ -30,7 +31,6 @@ class tcp_handler(BaseRequestHandler):
             self.data = self.request.recv(1024).decode()
             counter, start_time = control_flow(message_limit, counter, start_time)
             action, data, timestamp = json.loads(self.data)
-            print(f"Received {action} from {self.client_address[0]}:{self.client_address[1]}")
             if not verify_timestamp(timestamp):
                 raise Exception("Invalid timestamp received")
             
@@ -64,7 +64,7 @@ class tcp_handler(BaseRequestHandler):
             f.write(decrypted_data)
         
         listfile = {"File": name, "Size": f"{len(decrypted_data)} bytes", "Path": f"{gl.DOWNLOAD_DIR}{name}"}
-        display_list(f"File received from {user_name_of_email(sender_email)}", listfile, "No files received", "  ", 0)
+        display_list(f"File received from {user_name_of_email(sender_email)}", listfile, "No files received")
         self.request.sendall("File received".encode())
 
 
@@ -80,22 +80,26 @@ class tcp_handler(BaseRequestHandler):
 
     def handle_request_req_action(self, data):
         # Handle request request action
-        username = parse_user_data(data, ng.contact_requests)
-        if not username:
+        email = parse_user_data(data, ng.contact_requests)
+        if not email:
             raise Exception("Invalid data received")
-        
-        print(f"Contact request received from '{username}'({self.client_address[0]})")
-        self.request.sendall(json.dumps(["REQUEST_ACK", list_data()]).encode())
+
+        display_list("Contact request received", {"From": ng.contact_requests}, "No contact requests received")
+        self.request.sendall(json.dumps(["REQUEST_ACK", json.dumps(list_data())]).encode())
 
 
-    def handle_accept_req_action(self, data):
+    def handle_accept_req_action(self, data): # "I've accepted your request"
         # Handle accept request action
-        username = parse_user_data(data, ng.out_contact_requests)
-        ng.online_contacts[username] = ng.out_contact_requests.pop(username, None)
+        data = json.loads(data)
+        if not verify_contact_req(data['email']):
+            raise Exception("Invalid data received")
+        user = data['username']
         
-        add_contact(gl.USER_EMAIL, [username, ng.online_contacts[username][0]])
-        print(f"Accepted '{username}'s' Request ({self.client_address[0]}:{self.client_address[1]})")
-        self.request.sendall(json.dumps(["ACCEPT_ACK", list_data()]).encode())
+        ng.online_contacts[user] = ng.out_contact_requests.pop(user, None)
+        
+        add_contact(data)
+        print(f"{user} accepted your request ({self.client_address[0]}:{self.client_address[1]})")
+        self.request.sendall(json.dumps(["ACCEPT_ACK", json.dumps(list_data())]).encode())
 
 
 def stop_tcp_listen():
@@ -168,22 +172,19 @@ def tcp_client(port, data, extra=None, is_file=False):
                 received_data = json.loads(received)
                 if isinstance(received_data, list) and len(received_data) == 2:
                     action, out_data = received_data
+
                     parsed_user = parse_user_data(out_data, ng.out_contact_requests if action == "REQUEST_ACK" else ng.online_contacts)
                     if not parsed_user:
                         raise Exception("Invalid data received")
-                    print(f"Contact request sent to '{parsed_user}'")
-                elif action == "ACCEPT_ACK":
-                    parsed_user = parse_user_data(out_data, ng.online_contacts)
-                    if not parsed_user:
-                        raise Exception("Invalid data received")
-                    ng.online_contacts[parsed_user] = ng.contact_requests.pop(parsed_user, None)
-                    add_contact(gl.USER_EMAIL, [parsed_user, ng.online_contacts[parsed_user][0]])
-                    print(f"'{parsed_user}' accepted your contact request")
-                elif isinstance(received_data, str) and received_data == "ping":
-                    message = received_data
+                    if action == "REQUEST_ACK":
+                        print(f"Contact request sent to '{parsed_user}'")
+                    elif action == "ACCEPT_ACK":
+                        ng.contact_requests.pop(parsed_user, None)
+                        add_contact(json.loads(out_data))
+                        # print contact most recently added
+                        display_list("Contact added", {json.loads(out_data)}, "No contacts added")
                 else:
                     print("Unexpected data format received")
-            
             elif received and is_file:
                 if received == "File received":
                     print("File sent")
