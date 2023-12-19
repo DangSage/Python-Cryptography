@@ -1,41 +1,85 @@
 import json
-import globals as gl
+from datetime import datetime
+import time
 import nglobals as ng
-from utility import verify_contact
+from utility import display_list
 
-def display_list(msg1, data_dict, msg2):
-    '''display list of data in top down list format
-    i = index of item in list (for formatting)
-    item = item in list (for formatting)'''
 
-    print(msg1)
-    if len(data_dict) == 0:
-        print(f" └─{msg2}\n")
-        return False
-    else:
-        for key, value in data_dict.items():
-            #if last item in list
-            if key == list(data_dict.keys())[-1]:
-                print(" └─", end="")
-            else:
-                print(" ├─", end="")
-            print(f"─{key}: {value}")
-        print()
-        return True
+def clear_user_lists(username):
+    ''' clear all user lists '''
+    ng.online_users.pop(username, None)
+    ng.online_contacts.pop(username, None)
+    ng.contact_requests.pop(username, None)
+    ng.out_contact_requests.pop(username, None)
 
 
 def list_users():
-    return display_list("Online Users:", ng.online_users, "No users online.")
+    '''
+    list all users on the network in tree branch format
+    '''
+    bool = display_list("Online Users:", ng.online_users, "No users online.")
+    return bool
 
 
 def list_non_contacts():
-    non_contacts = {key: value for key, value in ng.online_users.items() if key not in ng.online_contacts}
-    return display_list("Online Users:", non_contacts, "No users to contact.")
+    non_contacts = {
+        key: value for key, value in ng.online_users.items() if key not in ng.contact_requests and 
+        key not in ng.out_contact_requests and key not in ng.online_contacts}
+    bool = display_list("Online Users:", non_contacts, "No users to contact.")
+    return bool
 
 
 def list_online_contacts():
-    '''list all online contacts in top down list format'''
-    return display_list("Online Contacts:", ng.online_contacts, "No online contacts.")
+    '''
+    list all online contacts in tree branch format
+    '''
+    bool = display_list("Online Contacts:", ng.online_contacts, "No online contacts.")
+    return bool
+
+
+def user_name_of_email(email):
+    '''
+    return the username of the user with the given email
+    '''
+    for user, info in ng.online_users.items():
+        if info['email'] == email:
+            return user
+    raise ValueError("No user found with the given email")
+
+
+def verify_timestamp(timestamp):
+    '''
+    check if timestamp is >= current time
+
+    return True if timestamp is valid
+    '''
+    timestamp_datetime = datetime.fromisoformat(timestamp)
+    # add 1 second to timestamp to account for time differences
+    timestamp_datetime = timestamp_datetime.replace(second=timestamp_datetime.second + 1)
+    now = datetime.now()
+    if timestamp_datetime < now:
+        return False
+    return True
+
+
+def control_flow(limit, counter, start_time):
+    '''
+    control the flow of messages sent and received
+
+    if counter >= limit, then print the number of messages processed in the last second,
+    and sleep for the remaining time in the second.
+    '''
+    counter += 1
+    if counter >= limit:
+        elapsed_time = time.time() - start_time
+        if elapsed_time < 1:
+            print(f"Processed {counter} messages in {elapsed_time} seconds")
+            sleep_time = 1 - elapsed_time
+            print(f"Sleeping for {sleep_time} seconds.")
+            time.sleep(sleep_time)
+        counter = 0
+        start_time = time.time()
+    return counter, start_time
 
 
 def verify_user(email):
@@ -45,8 +89,8 @@ def verify_user(email):
     else return False
     '''
     for key, value in ng.online_users.items():
-        if value[0] == email:
-            return value[1]
+        if value['email'] == email:
+            return value['tcp']
     return False
 
 
@@ -59,10 +103,10 @@ def verify_contact_req(email):
     else return False
     '''
     for key, value in ng.contact_requests.items():
-        if value[0] == email:
+        if value['email'] == email:
             return True
     for key, value in ng.out_contact_requests.items():
-        if value[0] == email:
+        if value['email'] == email:
             return True
     return False
 
@@ -78,15 +122,14 @@ def parse_user_data(data, user_dict):
     try:
         # convert data to list
         data = json.loads(data)
-        
-        key = data[0]
-        values = [data[1], data[2], data[3]] # email, tcp_port, bcast_port
-        user_dict.update({key: values})
-        return key
+                    
+        user_dict[data['username']] = {'email':data['email'], 'tcp':data['tcp'], 'udp':data['udp']}
+        return data['email']
     except IndexError:
         print("Client info invalid index {}".format(data))
         return False
     except json.decoder.JSONDecodeError:
         print("Client info invalid json encoding {}".format(data))
         return False
+
 

@@ -2,12 +2,18 @@
 import json
 import re
 import os
-from Cryptodome.PublicKey import RSA
-from Cryptodome.Protocol.KDF import PBKDF2
-from Cryptodome.Hash import SHA256
-
 import globals as gl
 import nglobals as ng
+
+
+def write_session_token():  # not in utility module
+    '''
+    write this clients session token to user_data.json
+    '''
+    user_data = load_user_data()
+    user_data[gl.USER_EMAIL]["session_token"] = ng.session_token
+    save_user_data(user_data)
+
 
 def save_user_data(user_data):
     with open(gl.USER_LIST, 'w') as file:
@@ -15,6 +21,9 @@ def save_user_data(user_data):
 
 
 def load_user_data():
+    '''
+    load user data from USER_LIST file
+    '''
     if os.path.exists(gl.USER_LIST):
         with open(gl.USER_LIST, 'r') as file:
             try:
@@ -40,27 +49,6 @@ def check_email():
             email_attempts += 1
 
 
-def hash_password(password):
-    salt = os.urandom(16)
-    password_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
-    return salt, password_hash
-
-
-def check_password(salt, password_hash, password):
-    new_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
-    return new_hash == password_hash
-
-
-def generate_key_pair():
-    private_key = RSA.generate(2048)
-    public_key = private_key.publickey()
-
-    private_pem = private_key.exportKey()
-    public_pem = public_key.exportKey()
-
-    return private_pem, public_pem
-
-
 def get_user_name_from_list():
     user_data = load_user_data()
     
@@ -69,33 +57,71 @@ def get_user_name_from_list():
             return user_info["username"]
 
 
+def strip_file_path(file_path):
+    '''
+    strip file path from file name
+    '''
+    file_name = os.path.basename(file_path)
+    return file_name
+
+
+def display_list(msg1, data_dict, msg2, prefix="", it=0):
+    '''
+    display list of data in tree format, using prefix to display tree structure
+
+    all data is displayed as a dictionary, using box-drawing characters to display tree structure
+    '''
+
+    if it == 0:
+        print(msg1)
+    if len(data_dict) == 0:
+        print(f"{prefix} └─{msg2}")
+        return False
+    else:
+        for i, (key, value) in enumerate(data_dict.items()):
+            if isinstance(value, dict):
+                if i == len(data_dict) - 1: # if last item in dictionary
+                    print(f"{prefix} └─{key}:")
+                    new_prefix = prefix + "  "
+                else:
+                    print(f"{prefix} ├─{key}:")
+                    new_prefix = prefix + " │"
+                display_list("", value, "No items.", new_prefix + "  ", it+1)
+            else:
+                if i == len(data_dict) - 1:
+                    print(f"{prefix} └─{key}: {value}")
+                else:
+                    print(f"{prefix} ├─{key}: {value}")
+        return True
+
+
 def list_data():
     '''
     returns a JSON object:
-    [user_name, user_email, tcp_listen, bcast_port]
+    [ username, user email, tcp port, udp port ]
     '''
-    data = [get_user_name_from_list(), gl.USER_EMAIL, ng.tcp_listen, ng.bcast_port]
-    return json.dumps(data)
+    data = {'username': get_user_name_from_list(), 'email':gl.USER_EMAIL, 
+            'tcp':ng.tcp_listen, 'udp':ng.bcast_port}
+    return data
 
 
-def add_contact(email, contact_data):
-    '''add a contact to a user's contact list'''
+def add_contact(contact_data):
+    '''
+    add a contact to a user's contact list in USER_LIST file
+    '''
 
     # load user data from file
     user_data = load_user_data()
 
-    if email not in user_data:
-        print("User not found!")
-        return
-    if contact_data[1] in user_data[email]['contacts']:
+    if contact_data['email'] in user_data[gl.USER_EMAIL]['contacts']:
         print("Contact already exists!")
         return
 
     contact_entry = {
-        "username": contact_data[0],
-        "email": contact_data[1]
+        "username": contact_data['username'],
+        "email": contact_data['email']
     }
-    user_data[email]['contacts'].append(contact_entry)
+    user_data[gl.USER_EMAIL]['contacts'].append(contact_entry)
     save_user_data(user_data)
 
 
@@ -108,13 +134,49 @@ def verify_contact(email):
     '''
     user_data = load_user_data()
 
-    for user_email, user_info in user_data.items():
-        if user_email == gl.USER_EMAIL:
-            if "contacts" in user_info:
-                if email in user_info["contacts"]:
-                    return True
+    gl.CONTACTS = user_data[gl.USER_EMAIL]["contacts"]
+    for contact in gl.CONTACTS:
+        if email == contact["email"]:
+            return True
+    for contact in ng.online_contacts:
+        if email == contact["email"]:
+            return True
+        
     return False
 
+
+def verify_session(email):
+    '''
+    verify if user has a session on this device
+    '''
+    user_data = load_user_data()
+    if email in user_data:
+        # if session token exists and is not equal to ng.SESSION_TOKEN return true
+        if "session_token" in user_data[email] and user_data[email]["session_token"] != ng.session_token:
+            return True
+    return False
+
+
+def verify_token(email, token):
+    '''
+    email = user's email pre-existing in ng.online_users
+    token = session token given through a broadcast message.
+
+    tokens are generated as get_random_bytes(12).hex()
+
+    return True if token == token in ng.online_users for email
+    return False if token != token in ng.online_users for email or token is not a valid token
+    '''
+     # Check if the token is a valid token
+    if not re.match(r'^[a-f0-9]{24}$', token):
+        return False
+
+    # Check if the email exists in ng.online_users and if the token matches
+    if email in ng.online_users and 'session_token' in ng.online_users[email]:
+        return ng.online_users[email]['session_token'] == token
+
+    return False
+    
 
 def contacts_dict_exist():
     '''
@@ -131,7 +193,4 @@ def contacts_dict_exist():
                 return False
         # return list of contacts
         return data[gl.USER_EMAIL]["contacts"]
-
-    
-
 
