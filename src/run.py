@@ -1,12 +1,9 @@
-import os
-from utility import yes_no_prompt, load_user_data
+from utility import yes_no_prompt, load_user_data, write_session_token
 from secure_shell import (
     login_user,
     register_user,
     start_cmd
 )
-import nglobals as ng
-import globals as gl
 from network import network_manager
 from threading import Thread
 
@@ -34,17 +31,11 @@ def start():
     except KeyboardInterrupt:
         exit()
 
-def cleanup():
-    os.remove(ng.KEY)
-    os.remove(ng.CERT)
-    os.rmdir("bin/certs/client_"+gl.USER_EMAIL)
 
 def run():
     start()
-    cmd = Thread(target=start_cmd)
+    cmd = Thread(target=start_cmd, daemon=True)
     cmd.start()
     network_manager()
-    cmd.join()
     print("Closing SecureDrop...")
-    cleanup()
     

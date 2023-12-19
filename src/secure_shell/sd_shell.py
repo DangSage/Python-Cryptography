@@ -3,11 +3,10 @@ import globals as gl
 from cmd import Cmd
 import network as net
 import nglobals as ng
-from utility import display_list
+
 
 class SecureDrop(Cmd):
     prompt = "secure_drop> "
-    intro = "Welcome to SecureDrop.\nType 'help' to list commands\n"
 
     def do_add(self, inp):
         net.handle_contact()
@@ -40,27 +39,28 @@ class SecureDrop(Cmd):
 
 
     def do_me(self, inp):
-        print("User: {}".format(gl.USER_NAME))
-        print(" ├─Network")
-        print(" |  ├─IP: {}".format(ng.own_ip))
-        print(" |  └─Ports: ")
-        print(" |      ├─TCP: {}".format(ng.tcp_port))
-        print(" |      └─UDP: {}".format(ng.bcast_port))
-        print(" └─Email: '{}'".format(gl.USER_EMAIL))
-        print("")
+        me = {}
+        me[gl.USER_NAME] = {
+            "Email": gl.USER_EMAIL, "Session Token": ng.session_token, 
+            "Network" : {
+                "IP": ng.own_ip, 
+                "Ports": {"TCP": ng.tcp_port, "UDP": ng.bcast_port}}
+        }
+        net.display_list("Your Info:", me, "No contacts.")
 
     def help_me(self):
-        print("    'me' -> Display current user info.")
+        print("    'me' -> Display my user info.")
 
     def do_help(self, inp):
         if inp > "":
             Cmd.do_help(self, inp)
         else:
             print("Available commands:")
+            self.help_me()
+            self.help_users()
             self.help_add()
             self.help_list()
-            self.help_users()
-            self.help_me()
+            self.help_send()
             self.help_exit()
         if inp == "help":
             self.help_help()
@@ -68,6 +68,10 @@ class SecureDrop(Cmd):
     def help_help(self):
         print("  'help' -> List available commands with 'help' or detailed help with 'help cmd'.")
 
+
+    def __init__(self):
+        Cmd.__init__(self)
+        self.intro = F"Welcome to SecureDrop {gl.USER_NAME}!\nType 'help' for a list of commands."
 
     def default(self, inp):
         if inp in gl.EXIT_CMD:
@@ -82,8 +86,12 @@ def start_cmd():
     try:
         ng.network_ready.wait()
         SecureDrop().cmdloop()
-    except:
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
         print("\nExiting...")
-        net.shutdown_event.set()
+        ng.stop_threads.set()
         net.stop_tcp_listen()
         exit()

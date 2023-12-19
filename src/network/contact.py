@@ -2,7 +2,7 @@ from .tcp import tcp_client
 import os
 import nglobals as ng
 import globals as gl
-from utility import yes_no_prompt, list_data, verify_contact
+from utility import yes_no_prompt, list_data, verify_contact, strip_file_path
 from .ndata import (
     list_users, 
     list_online_contacts,
@@ -11,7 +11,7 @@ from .ndata import (
     verify_contact_req, 
     display_list,
     user_name_of_email
-    )
+)
 
 
 def request_contact():
@@ -99,8 +99,10 @@ def send_file():
 
     file_name = file_path.split("/")[-1]
     try:
+        # create dictionary of username and file path
+        display_list("Sending:", {strip_file_path(file_name): user_name_of_email(contactee_email)}, "HDWGH?")
         yes_no_prompt(
-            f"File: {file_path}\nContact: {user_name_of_email(contactee_email)}\nSend file to contact? (y/n) >", 
+            "Send file to contact? (y/n) >", 
             lambda: tcp_client(verify_user(contactee_email), file_path, file_name, True))
     except Exception as e:
         print("Error: Could not send file: ", e)

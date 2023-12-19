@@ -2,7 +2,8 @@ from utility import (
     load_user_data,
     get_email, 
     get_password,
-    check_password
+    check_password,
+    verify_session
 )
 import globals as gl
 
@@ -10,8 +11,8 @@ def login_loop():
     attempts = 0
     user_data = load_user_data()
     email = get_email()
-
-    if email in user_data:
+    
+    if email in user_data and not verify_session(email):
         gl.USER_EMAIL = email
         gl.CONTACTS = list(user_data[email]['contacts'])
         gl.USER_NAME = user_data[email]['username']
@@ -21,11 +22,13 @@ def login_loop():
             salt = bytes.fromhex(user_data[email]['password'].split(':')[0])
             stored_password_hash = bytes.fromhex(user_data[email]['password'].split(':')[1])
             if (check_password(salt, stored_password_hash, password)):
-                print("Login successful!")
+                print("Login successful!\n")
                 return True
             else:
                 print("Incorrect password!")
                 attempts += 1
+    elif verify_session(email):
+        print("User already logged in!")
     else:
         print("User with that email not registered!")
     

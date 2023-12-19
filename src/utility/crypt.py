@@ -1,17 +1,23 @@
-import os
 import base64
-import json
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Cipher import PKCS1_OAEP, AES
 from Cryptodome.Protocol.KDF import PBKDF2
 from Cryptodome.Hash import SHA256
-import globals as gl
 import nglobals as ng
 
 
+def session_token():
+    if ng.session_token:
+        return ng.session_token
+    session_token = get_random_bytes(12).hex()
+    ng.session_token = session_token
+    print("Session token: {}".format(session_token))
+    return session_token
+
+
 def hash_password(password):
-    salt = os.urandom(16)
+    salt = get_random_bytes(16)
     password_hash = PBKDF2(password, salt, 64, count=100000, hmac_hash_module=SHA256)
     return salt, password_hash
 

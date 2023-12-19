@@ -1,32 +1,49 @@
 import ssl
+import datetime
+import time
 import json
 import socket
-import base64
 import nglobals as ng
 import globals as gl
 from socketserver import BaseRequestHandler, TCPServer
-from .ndata import parse_user_data, user_name_of_email
+from .ndata import (
+    clear_user_lists,
+    control_flow,
+    parse_user_data,
+    user_name_of_email, 
+    verify_user, 
+    verify_timestamp
+)
 from utility import *
 import traceback
 
 online_users = ng.online_users
 
+
 class tcp_handler(BaseRequestHandler):
     def handle(self):
         ''' Main handler for all TCP connections (in) '''
+        counter = 0
+        start_time = time.time()
+        message_limit = 50 # messages per second
         try:
             self.data = self.request.recv(1024).decode()
-            action, data = json.loads(self.data)
+            counter, start_time = control_flow(message_limit, counter, start_time)
+            action, data, timestamp = json.loads(self.data)
+            print(f"Received {action} from {self.client_address[0]}:{self.client_address[1]}")
+            if not verify_timestamp(timestamp):
+                raise Exception("Invalid timestamp received")
+            
             if "FILE" in action:
                 self.handle_file_action(action, data)
+            elif action == "DISCONNECT_REQ":
+                self.handle_disconnect_action(data)
             elif action == "REQUEST_REQ":
                 self.handle_request_req_action(data)
             elif action == "ACCEPT_REQ":
                 self.handle_accept_req_action(data)
-            elif action == "":
-                self.request.sendall(json.dumps("No").encode())
             else:
-                self.request.sendall(json.dumps("ping").encode())
+                self.request.sendall(json.dumps("No").encode())
         except json.JSONDecodeError:
             self.request.sendall(json.dumps("Invalid data received").encode())
         except (ValueError, Exception) as e:
@@ -40,14 +57,25 @@ class tcp_handler(BaseRequestHandler):
         __, name, sender_email = parts
         if not verify_contact(sender_email):
             raise Exception("File sender is not a contact, file rejected", sender_email)
-        print(f"Received from {user_name_of_email(sender_email)}")
         decrypted_data = decrypt_file(data)
 
         # save file
         with open(f"{gl.DOWNLOAD_DIR}{name}", 'wb') as f:
             f.write(decrypted_data)
-        print(f"File received: {name}")
+        
+        listfile = {"File": name, "Size": f"{len(decrypted_data)} bytes", "Path": f"{gl.DOWNLOAD_DIR}{name}"}
+        display_list(f"File received from {user_name_of_email(sender_email)}", listfile, "No files received", "  ", 0)
         self.request.sendall("File received".encode())
+
+
+    def handle_disconnect_action(self, data):
+        # Handle disconnect action
+        username = parse_user_data(data, ng.online_contacts)
+        if not username:
+            raise Exception("Invalid data received")
+        print(f"Contact '{username}' disconnected ({self.client_address[0]}:{self.client_address[1]})")
+        # no sendall() here, client will close connection
+        clear_user_lists(username)
 
 
     def handle_request_req_action(self, data):
@@ -70,7 +98,6 @@ class tcp_handler(BaseRequestHandler):
         self.request.sendall(json.dumps(["ACCEPT_ACK", list_data()]).encode())
 
 
-
 def stop_tcp_listen():
     ng._tcpserver.shutdown()
     ng._tcpserver.server_close()
@@ -87,6 +114,7 @@ def tcp_listen(port):
         print("Certificate file not found")
         return
     except ssl.SSLError:
+        # print the error message
         print("Invalid certificate file")
         return
 
@@ -101,7 +129,8 @@ def tcp_listen(port):
         print(" ├─TCP listener closed")
 
 
-def tcp_client(port, data, action=None, is_file=False):
+
+def tcp_client(port, data, extra=None, is_file=False):
     ''' Secondary handler for all TCP connections (out) '''
     host_ip = "localhost"
     cntx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -113,19 +142,28 @@ def tcp_client(port, data, action=None, is_file=False):
 
         with socket.create_connection((host_ip, port)) as s:
             with cntx.wrap_socket(s, server_hostname="localhost") as ssl_s:
+                timestamp = datetime.datetime.now().isoformat()
+                action = ""
                 if not is_file:
-                    message = json.dumps([f"{action.upper()}_REQ" if action else "", data])
+                    action = extra.upper()+"_REQ" if extra else ""
                 else:
-                    name = strip_file_path(action)
+                    name = strip_file_path(extra)
                     print(f"Sending file: {name}")
+                    action = f"FILE_{name}_{gl.USER_EMAIL}"
                     receivers_cert = ssl_s.getpeercert(binary_form=True)
                     receivers_pem = ssl.DER_cert_to_PEM_cert(receivers_cert) 
-                    encrypted_file_info = encrypt_file(data, pub_from_pem(receivers_pem))
-                    message = json.dumps([f"FILE_{name}_{gl.USER_EMAIL}", encrypted_file_info])
-                print("...")
+                    data = encrypt_file(data, pub_from_pem(receivers_pem)) # data -> encrypted file
+
+                message = json.dumps([action, data, timestamp])
                 ssl_s.sendall(message.encode())
+
+                if action == "DISCONNECT_REQ":
+                    return
+                print("...")
                 received = ssl_s.recv(1024).decode()
         
+
+            # Handle received data
             if received and not is_file:
                 received_data = json.loads(received)
                 if isinstance(received_data, list) and len(received_data) == 2:
@@ -141,17 +179,23 @@ def tcp_client(port, data, action=None, is_file=False):
                     ng.online_contacts[parsed_user] = ng.contact_requests.pop(parsed_user, None)
                     add_contact(gl.USER_EMAIL, [parsed_user, ng.online_contacts[parsed_user][0]])
                     print(f"'{parsed_user}' accepted your contact request")
-                elif isinstance(received_data, str):
+                elif isinstance(received_data, str) and received_data == "ping":
                     message = received_data
                 else:
                     print("Unexpected data format received")
-                    return
             
             elif received and is_file:
                 if received == "File received":
                     print("File sent")
                 else:
                     print(f"Could not send file: {received}")
-    except (FileNotFoundError, ssl.SSLError, ConnectionRefusedError, json.decoder.JSONDecodeError, Exception) as e:
+    except ConnectionRefusedError:
+        if verify_user(port):
+            pass    # broadcast listener will handle this
+        else:
+            print("Connection refused")
+    except (FileNotFoundError, ssl.SSLError, json.decoder.JSONDecodeError) as e:
+        print(f"{e}")
+    except Exception as e:
         print(f"Error: {e}")
         traceback.print_exc()
