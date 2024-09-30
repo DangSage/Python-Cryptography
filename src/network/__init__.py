@@ -12,7 +12,7 @@ def port_manager(bport, lport, max_attempts=1000):
     test_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     attempts = 0
     # get own ipv4 address
-    ng.own_ip = socket.gethostbyname(socket.gethostname())
+    ng.own_ip = '0.0.0.0'
     while attempts < max_attempts:
         try:
             test_socket.bind(("", bport))
@@ -30,8 +30,8 @@ def port_manager(bport, lport, max_attempts=1000):
 
 def network_manager():
     session_token()
-    write_session_token()
     gen_certificate(gl.USER_EMAIL)
+    write_session_token()
     ng.bcast_port, ng.tcp_listen = port_manager(ng.bcast_port, ng.tcp_listen)
 
     # broadcast socket setup (multicast)

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Create the client cert directory in the current directory
 
 subject="/CN=localhost/O=client/OU=$1"

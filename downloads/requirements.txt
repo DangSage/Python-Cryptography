@@ -1,4 +1,0 @@
-downloaded modules/packages used in this project:
-
-pycryptodomex
-openssl

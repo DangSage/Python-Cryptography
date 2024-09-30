@@ -1,4 +1,4 @@
-from utility import yes_no_prompt, load_user_data, write_session_token
+from utility import yes_no_prompt, load_user_data
 from secure_shell import (
     login_user,
     register_user,
