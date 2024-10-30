@@ -3,3 +3,15 @@ __pycache__/
 ~*.py
 __*/
 client_*/
+
+# tex files
+*.aux
+*.log
+*.out
+*.pdf
+*.synctex.gz
+*.toc
+*.fdb_latexmk
+*.fls
+*.gz
+*.dvi
